@@ -14,16 +14,17 @@ const cors=require('cors')
 })
 
 // parse application/x-www-form-urlencoded
+
 app.use(bodyParser.urlencoded({ extended: false }));
+
 // parse application/json
 app.use(bodyParser.json());
-app.use(cors())
 app.use(express.json());
-app.get("/",  (req, res) => {
   
- return res.json("hello")
+app.get("/", (req, res) => {
+  return res.json("hello");
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+  console.log(`Example app listening on port ${port}`);
+});
