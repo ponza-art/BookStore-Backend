@@ -6,7 +6,7 @@ const process = require("process");
 require("dotenv").config();
 const port = process.env.PORT;
 const url = process.env.URL;
-
+const cors=require('cors')
  mongoose.connect(url).then(() => {
   console.log("mongo connection started");
 }).catch(err=>{
@@ -17,6 +17,7 @@ const url = process.env.URL;
 app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
 app.use(bodyParser.json());
+app.use(cors())
 app.use(express.json());
 app.get("/",  (req, res) => {
   
@@ -24,5 +25,5 @@ app.get("/",  (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
-});
+  console.log(`Example app listening on port ${port}`)
+})
