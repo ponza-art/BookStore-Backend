@@ -3,6 +3,7 @@ const app = express();
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const process = require("process");
+const bookRouter = require("./routes/bookRoutes");
 require("dotenv").config();
 const port = process.env.PORT;
 const url = process.env.URL;
@@ -24,10 +25,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use(express.json());
-  
+
 app.get("/", (req, res) => {
   return res.json("hello");
 });
+
+app.use("/book", bookRouter);
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

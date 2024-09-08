@@ -1,10 +1,7 @@
+const joi = require("joi");
 
-const { object, string } = require  ('joi');
-
-const bookSchemaJoi = object({
-  title: string().required(),
-  description: string().required(),
-  sourcePath: string().required(),
+module.exports = joi.object({
+  title: joi.string().required(),
+  description: joi.string().required(),
+  sourcePath: joi.string().required(),
 });
-
-module.exports=  bookSchemaJoi ;
