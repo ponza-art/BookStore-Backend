@@ -7,20 +7,26 @@ require("dotenv").config();
 const port = process.env.PORT;
 const url = process.env.URL;
 
- mongoose.connect(url).then(() => {
-  console.log("mongo connection started");
-}).catch(err=>{
-  console.log("mongo connection drop")
-})
+mongoose
+  .connect(url)
+  .then(() => {
+    console.log("mongo connection started");
+  })
+  .catch((err) => {
+    console.log("mongo connection drop");
+  });
 
 // parse application/x-www-form-urlencoded
+
 app.use(bodyParser.urlencoded({ extended: false }));
+
 // parse application/json
 app.use(bodyParser.json());
+
 app.use(express.json());
-app.get("/",  (req, res) => {
   
- return res.json("hello")
+app.get("/", (req, res) => {
+  return res.json("hello");
 });
 
 app.listen(port, () => {
