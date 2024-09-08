@@ -8,7 +8,11 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
-    lowercase: tru,
+    lowercase: true,
+    match: [
+      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+      "Please fill a valid email address",
+    ],
   },
   password: {
     type: String,
@@ -18,7 +22,11 @@ const userSchema = new mongoose.Schema({
 
   role: {
     type: String,
+    
   },
+  token:{
+    type:String
+  }
 });
 
-export default mongoose.model("User", userSchema);
+module.exports= mongoose.model("User", userSchema);
