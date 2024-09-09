@@ -1,37 +1,53 @@
 const express = require("express");
 const app = express();
-const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const process = require("process");
-const bookRouter = require("./routes/bookRoutes");
+const cors = require("cors");
+const cookieParser = require('cookie-parser');
 require("dotenv").config();
+
 const port = process.env.PORT;
 const url = process.env.URL;
 
-mongoose
-  .connect(url)
-  .then(() => {
-    console.log("mongo connection started");
-  })
-  .catch((err) => {
-    console.log("mongo connection drop");
-  });
+const bookRouter = require("./routes/bookRoutes");
+const Usersrouter = require("./routes/userRoutes");
+const httpStatusText = require("./utils/httpStatusText");
 
-// parse application/x-www-form-urlencoded
-
-app.use(bodyParser.urlencoded({ extended: false }));
-
-// parse application/json
-app.use(bodyParser.json());
-
+// Middlewares
+app.use(cors({ credentials: true }));
+app.use(cookieParser());
+app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-app.get("/", (req, res) => {
-  return res.json("hello");
-});
+// Mongoose connection
+mongoose
+  .connect(url)
+  .then(() => console.log("MongoDB connection started"))
+  .catch((err) => console.log("MongoDB connection failed:", err));
 
+// Routes
+app.use("/users", Usersrouter);
 app.use("/book", bookRouter);
 
+// Global middleware for non-existing routes
+app.all("*", (req, res) => {
+  return res.status(404).json({
+    status: httpStatusText.FAIL,
+    code: "404",
+    message: "This Resource is not available",
+  });
+});
+
+// Global error handler
+app.use((error, req, res, next) => {
+  return res.status(error.statusCode || 500).json({
+    status: error.statusText || httpStatusText.ERROR,
+    message: error.message,
+    code: error.statusCode || 500,
+    data: null,
+  });
+});
+
+// Start the server
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+  console.log(`Server is running on port ${port}`);
 });
