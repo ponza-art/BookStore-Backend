@@ -1,53 +1,67 @@
 const express = require("express");
 const app = express();
+const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
+const process = require("process");
 const cors = require("cors");
-const cookieParser = require('cookie-parser');
+//make token save in cookies
+var cookieParser = require('cookie-parser')
+app.use(cookieParser())
+app.use(cors({credentials:true}))
+////////////////////////////////
+const bookRouter = require("./routes/bookRoutes");
 require("dotenv").config();
-
 const port = process.env.PORT;
 const url = process.env.URL;
 
-const bookRouter = require("./routes/bookRoutes");
-const Usersrouter = require("./routes/userRoutes");
-const httpStatusText = require("./utils/httpStatusText");
-
-// Middlewares
-app.use(cors({ credentials: true }));
-app.use(cookieParser());
-app.use(express.urlencoded({ extended: false }));
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
+// parse application/json
+app.use(bodyParser.json());
 app.use(express.json());
-
-// Mongoose connection
+const httpSTatusText = require("./utils/httpStatusText");
+//mongoose
 mongoose
   .connect(url)
-  .then(() => console.log("MongoDB connection started"))
-  .catch((err) => console.log("MongoDB connection failed:", err));
+  .then(() => {
+    console.log("mongo connection started");
+  })
+  .catch((err) => {
+    console.log("mongo connection drop");
+  });
 
-// Routes
+//route
+const Usersrouter = require("./routes/userRoutes");
+
+
 app.use("/users", Usersrouter);
 app.use("/book", bookRouter);
 
-// Global middleware for non-existing routes
-app.all("*", (req, res) => {
-  return res.status(404).json({
-    status: httpStatusText.FAIL,
-    code: "404",
-    message: "This Resource is not available",
-  });
+
+//global middleware for not fond router
+app.all("*", (req, res, next) => {
+  return res
+    .status(404)
+    .json({
+      status: httpSTatusText.FAIL,
+      code: "404",
+      message: "This Resourse is not available",
+    });
 });
 
-// Global error handler
+// glopal handle error from asyncwrapper middleware
 app.use((error, req, res, next) => {
-  return res.status(error.statusCode || 500).json({
-    status: error.statusText || httpStatusText.ERROR,
-    message: error.message,
-    code: error.statusCode || 500,
-    data: null,
-  });
+  return res
+    .status(error.statusCode || 500)
+    .json({
+      status: error.statusText || httpSTatusText.ERROR,
+      message: error.message,
+      code: error.statusCode || 500,
+      data: null,
+    });
 });
 
-// Start the server
+
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+  console.log(`Example app listening on port ${port}`);
 });

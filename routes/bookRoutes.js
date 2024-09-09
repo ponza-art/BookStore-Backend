@@ -1,18 +1,15 @@
-const express = require("express");
+// routes/bookRoutes.js
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
 const router = express.Router();
-const {
-  getBookById,
-  getAllBooks,
-  createBook,
-  updateBookById,
-  deleteBookById,
-} = require("../controllers/bookController");
-const validateBook = require("../middleware/middlewareBook");
+const { createBook, getAllBooks, getBookById, updateBookById, deleteBookById } = require('../controllers/bookController');
+const upload = multer({ dest: 'uploads/' });
 
-router.get("/", getAllBooks);
-router.get("/:id", getBookById);
-router.post("/", validateBook, createBook);
-router.put("/:id", validateBook, updateBookById);
-router.delete("/:id", deleteBookById);
+router.get('/', getAllBooks);
+router.get('/:id', getBookById);
+router.post('/', upload.single('file'), createBook);
+router.put('/:id', updateBookById);
+router.delete('/:id', deleteBookById);
 
 module.exports = router;
