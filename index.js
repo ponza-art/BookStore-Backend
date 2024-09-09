@@ -4,10 +4,12 @@ const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const process = require("process");
 const cors = require("cors");
+const AppError = require("./utils/appError");
+const logger =require("./middleware/logger")
 //make token save in cookies
-var cookieParser = require('cookie-parser')
-app.use(cookieParser())
-app.use(cors({credentials:true}))
+var cookieParser = require("cookie-parser");
+app.use(cookieParser());
+app.use(cors({ credentials: true }));
 ////////////////////////////////
 const bookRouter = require("./routes/bookRoutes");
 require("dotenv").config();
@@ -33,34 +35,33 @@ mongoose
 //route
 const Usersrouter = require("./routes/userRoutes");
 
-
 app.use("/users", Usersrouter);
 app.use("/book", bookRouter);
 
-
 //global middleware for not fond router
 app.all("*", (req, res, next) => {
-  return res
-    .status(404)
-    .json({
-      status: httpSTatusText.FAIL,
-      code: "404",
-      message: "This Resourse is not available",
-    });
+  return res.status(404).json({
+    status: httpSTatusText.FAIL,
+    code: "404",
+    message: "This Resourse is not available",
+  });
 });
 
 // glopal handle error from asyncwrapper middleware
 app.use((error, req, res, next) => {
-  return res
-    .status(error.statusCode || 500)
-    .json({
-      status: error.statusText || httpSTatusText.ERROR,
-      message: error.message,
-      code: error.statusCode || 500,
-      data: null,
-    });
-});
+  logger.error(
+    `${req.method} ${req.url} - ${new Date().toISOString()} - Error: ${
+      error.message
+    }`
+  );
 
+  if (error instanceof AppError) {
+    res.status(error.statusCode).json({ message: error.message });
+  } else {
+    res.status(500).json({ message: "Internal server error" });
+  }
+  next()
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);

@@ -19,14 +19,20 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6,
   },
+   
 
   role: {
     type: String,
     
   },
-  token:{
-    type:String
-  }
-});
+ 
+},{
+  toJSON: {
+    transform(doc, ret) {
+      delete ret.password;
+    },
+  },
+}
+);
 
 module.exports= mongoose.model("User", userSchema);

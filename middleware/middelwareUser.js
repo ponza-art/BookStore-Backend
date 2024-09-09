@@ -1,43 +1,41 @@
-
 const httpStatusText = require("../utils/httpStatusText.js");
-const {userSchemaJoi} = require("../validators/userValidate.js"); 
-const {loginSchemaJoi} = require("../validators/LoginValidator.js"); 
-const asyncWrapper = require("./asyncWrapper.js");
-const appError = require("../utils/appError.js");
+const { userSchemaJoi } = require("../validators/userValidate.js");
+const { loginSchemaJoi } = require("../validators/LoginValidator.js");
 
-const validateUser = asyncWrapper(
-  async (req, res, next) => {
+const AppError = require("../utils/appError.js");
+
+const validateUser = async (req, res, next) => {
+  try {
     const { error } = userSchemaJoi.validate(req.body);
     if (error) {
-      
-      const err = appError.create(
-        "Data is incorrect. Please check all fields and try again.",
-        402,
-        httpStatusText.FAIL
+      return next(
+        new AppError(
+          "Data is incorrect. Please check all fields and try again.",
+          400 
+        )
       );
-      return next(err); 
     }
-
-
-    next();
+    next(); 
+  } catch (error) {
+    return next(new AppError("Register Failed", 500));
   }
-);
-const validateLoginUser = asyncWrapper(
-  async (req, res, next) => {
+};
+
+const validateLoginUser = async (req, res, next) => {
+  try {
     const { error } = loginSchemaJoi.validate(req.body);
     if (error) {
-      
-      const err = appError.create(
-        "Data is incorrect. Please check all fields and try again.",
-        402,
-        httpStatusText.FAIL
+      return next(
+        new AppError(
+          "Data is incorrect. Please check all fields and try again.",
+          400
+        )
       );
-      return next(err); 
     }
-
-
-    next();
+    next(); 
+  } catch (error) {
+   return next(new AppError("Login Failed", 500));
   }
-);
+};
 
-module.exports = { validateUser ,validateLoginUser};
+module.exports = { validateUser, validateLoginUser };

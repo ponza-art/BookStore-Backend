@@ -4,3 +4,4 @@ node_modules/
 config.env
 *.env
 firebaseServiceAccount.json
+app.log
