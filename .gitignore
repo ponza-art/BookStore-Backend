@@ -5,3 +5,4 @@ config.env
 *.env
 firebaseServiceAccount.json
 app.log
+.vercel
