@@ -1,3 +1,4 @@
+const { required } = require("joi");
 const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   username: {
@@ -9,30 +10,24 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
     lowercase: true,
-    match: [
-      /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
-      "Please fill a valid email address",
-    ],
+    // match: [
+    //   /^\w+([\.-]?\w+)@\w+([\.-]?\w+)(\.\w{2,3})+$/,
+    //   "Please fill a valid email address",
+    // ],
   },
   password: {
     type: String,
     required: true,
     minlength: 6,
   },
-   
 
-  role: {
-    type: String,
-    
+  isAdmin: {
+    type: Boolean,
+    default: false,
   },
- 
-},{
-  toJSON: {
-    transform(doc, ret) {
-      delete ret.password;
-    },
-  },
-}
-);
+  // token: {
+  //   type: String,
+  // },
+});
 
-module.exports= mongoose.model("User", userSchema);
+module.exports = mongoose.model("User", userSchema);
