@@ -1,9 +1,10 @@
 // routes/bookRoutes.js
 const express = require('express');
-const multer = require('multer');
 const router = express.Router();
 const { createBook, getAllBooks, getBookById, updateBookById, deleteBookById } = require('../controllers/bookController');
-const upload = multer({ dest: 'uploads/' });
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
 const verifyAdmin=require("../middleware/verifyAdmin")
 
 router.get('/', getAllBooks);

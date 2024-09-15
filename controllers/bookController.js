@@ -26,94 +26,105 @@ const getBookById = async (req, res, next) => {
 };
 
 const createBook = async (req, res, next) => {
-    try {
-      const { title, description } = req.body;
-      const file = req.file;
-  
-      if (!file) {
-        return res.status(400).json({ error: 'No file provided' });
-      }
-  
-      // Remove spaces from the filename
-      const sanitizedFilename = file.originalname.replace(/\s+/g, '_');
-      const filePath = path.join(__dirname, '../uploads', sanitizedFilename);
-      
-      // Rename the file locally
-      fs.renameSync(file.path, filePath);
-  
-      // Prepare Firebase file path
-      const firebaseFile = bucket.file(`books/${sanitizedFilename}`);
-  
-      // Upload to Firebase
-      await bucket.upload(filePath, { destination: firebaseFile });
-  
+  try {
+    const { title, description } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+
+    // Remove spaces from the filename
+    const sanitizedFilename = file.originalname.replace(/\s+/g, '_');
+    const firebaseFile = bucket.file(`books/${sanitizedFilename}`);
+
+    // Upload file to Firebase directly from the buffer
+    const stream = firebaseFile.createWriteStream({
+      metadata: {
+        contentType: file.mimetype,
+      },
+    });
+
+    stream.end(file.buffer);
+
+    // Wait for upload completion
+    stream.on('finish', async () => {
       const [url] = await firebaseFile.getSignedUrl({
         action: 'read',
         expires: '03-09-2491',
       });
-  
+
       // Create and save book document
       const book = new Book({
         title,
         description,
         sourcePath: url,
       });
-  
-      await book.save();
-  
-      // Clean up local file
-      fs.unlinkSync(filePath);
-  
-      res.status(201).json(book);
-    } catch (error) {
-      next(error);
-    }
-  };
 
-const updateBookById = async (req, res, next) => {
+      await book.save();
+      res.status(201).json(book);
+    });
+
+    stream.on('error', (error) => {
+      next(error);
+    });
+
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+  const updateBookById = async (req, res, next) => {
     try {
       const book = await Book.findById(req.params.id);
       if (!book) {
         return res.status(404).json({ error: "Book not found" });
       }
   
-      
       if (req.file) {
-        
         if (book.sourcePath) {
-
-            const previousFileName = book.sourcePath.replace(/\s+/g, '_').split("/").pop().split("?")[0]; 
-            const previousFile = bucket.file(`books/${previousFileName.replace(/\s+/g, '_')}`); 
-            await previousFile.delete(); 
+          const previousFileName = book.sourcePath.split("/").pop().split("?")[0];
+          const previousFile = bucket.file(`books/${previousFileName}`);
+          await previousFile.delete();
         }
   
-        
-        const filePath = path.join(__dirname, "../uploads", req.file.filename);
-        const firebaseFile = bucket.file(`books/${req.file.originalname.replace(/\s+/g, '_')}`);
-        await bucket.upload(filePath, { destination: firebaseFile });
+        const sanitizedFilename = req.file.originalname.replace(/\s+/g, '_');
+        const firebaseFile = bucket.file(`books/${sanitizedFilename}`);
   
-        
-        const [url] = await firebaseFile.getSignedUrl({
-          action: "read",
-          expires: "03-09-2491",
+        const stream = firebaseFile.createWriteStream({
+          metadata: {
+            contentType: req.file.mimetype,
+          },
         });
   
-        
-        req.body.sourcePath = url;
+        stream.end(req.file.buffer);
   
-        
-        fs.unlinkSync(filePath);
+        stream.on('finish', async () => {
+          const [url] = await firebaseFile.getSignedUrl({
+            action: 'read',
+            expires: '03-09-2491',
+          });
+  
+          req.body.sourcePath = url;
+          Object.assign(book, req.body);
+          await book.save();
+          res.json(book);
+        });
+  
+        stream.on('error', (error) => {
+          next(error);
+        });
+      } else {
+        Object.assign(book, req.body);
+        await book.save();
+        res.json(book);
       }
-  
-      
-      Object.assign(book, req.body);
-      await book.save();
-  
-      res.json(book);
     } catch (error) {
       next(error);
     }
   };
+  
   
   
 
