@@ -70,57 +70,72 @@ const createBook = async (req, res, next) => {
   }
 };
 
+const updateBookById = async (req, res, next) => {
+  try {
+    const book = await Book.findById(req.params.id);
+    if (!book) {
+      return res.status(404).json({ error: "Book not found" });
+    }
 
-  const updateBookById = async (req, res, next) => {
-    try {
-      const book = await Book.findById(req.params.id);
-      if (!book) {
-        return res.status(404).json({ error: "Book not found" });
-      }
-  
-      if (req.file) {
-        if (book.sourcePath) {
-          const previousFileName = book.sourcePath.split("/").pop().split("?")[0];
-          const previousFile = bucket.file(`books/${previousFileName}`);
+    if (req.file) {
+      if (book.sourcePath) {
+        const previousFileName = book.sourcePath.split("/").pop().split("?")[0].trim();
+        const previousFile = bucket.file(`books/${previousFileName}`);
+        
+        try {
           await previousFile.delete();
+          console.log(`Successfully deleted file: ${previousFileName}`);
+        } catch (deleteError) {
+          console.error(`Error deleting file ${previousFileName}:`, deleteError);
+          // Continue to handle this specific error
         }
-  
-        const sanitizedFilename = req.file.originalname.replace(/\s+/g, '_');
-        const firebaseFile = bucket.file(`books/${sanitizedFilename}`);
-  
-        const stream = firebaseFile.createWriteStream({
-          metadata: {
-            contentType: req.file.mimetype,
-          },
-        });
-  
-        stream.end(req.file.buffer);
-  
-        stream.on('finish', async () => {
+      }
+
+      const sanitizedFilename = req.file.originalname.replace(/\s+/g, '_').trim();
+      const firebaseFile = bucket.file(`books/${sanitizedFilename}`);
+
+      const stream = firebaseFile.createWriteStream({
+        metadata: {
+          contentType: req.file.mimetype,
+        },
+      });
+
+      stream.on('finish', async () => {
+        try {
           const [url] = await firebaseFile.getSignedUrl({
             action: 'read',
             expires: '03-09-2491',
           });
-  
+
           req.body.sourcePath = url;
           Object.assign(book, req.body);
           await book.save();
           res.json(book);
-        });
-  
-        stream.on('error', (error) => {
-          next(error);
-        });
-      } else {
-        Object.assign(book, req.body);
-        await book.save();
-        res.json(book);
-      }
-    } catch (error) {
-      next(error);
+        } catch (err) {
+          console.error("Error getting signed URL:", err);
+          next(err);
+        }
+      });
+
+      stream.on('error', (error) => {
+        console.error("Error uploading file:", error);
+        next(error);
+      });
+
+      stream.end(req.file.buffer);
+    } else {
+      Object.assign(book, req.body);
+      await book.save();
+      res.json(book);
     }
-  };
-  
+  } catch (error) {
+    console.error("Internal server error:", error);
+    next(error);
+  }
+};
+
+
+
   
   
 
