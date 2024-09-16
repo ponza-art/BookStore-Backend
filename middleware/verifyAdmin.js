@@ -23,9 +23,9 @@ const verifyAdmin = async (req, res, next) => {
       return next(new AppError("User not found", 404));
     }
 
-    // if (checkUser.isAdmin || checkUser.email !== process.env.ADMIN_EMAIL) {
-    //   return next(new AppError("User not authorized", 403));
-    // }
+    if (checkUser.isAdmin || checkUser.email !== process.env.ADMIN_EMAIL) {
+      return next(new AppError("User not authorized", 403));
+    }
 
     next();
   } catch (error) {
