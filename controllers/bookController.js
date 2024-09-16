@@ -34,11 +34,9 @@ const createBook = async (req, res, next) => {
       return res.status(400).json({ error: 'No file provided' });
     }
 
-    // Remove spaces from the filename
     const sanitizedFilename = file.originalname.replace(/\s+/g, '_');
     const firebaseFile = bucket.file(`books/${sanitizedFilename}`);
 
-    // Upload file to Firebase directly from the buffer
     const stream = firebaseFile.createWriteStream({
       metadata: {
         contentType: file.mimetype,
@@ -47,14 +45,12 @@ const createBook = async (req, res, next) => {
 
     stream.end(file.buffer);
 
-    // Wait for upload completion
     stream.on('finish', async () => {
       const [url] = await firebaseFile.getSignedUrl({
         action: 'read',
         expires: '03-09-2491',
       });
 
-      // Create and save book document
       const book = new Book({
         title,
         description,

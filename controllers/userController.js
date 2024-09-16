@@ -71,7 +71,7 @@ const login = async (req, res, next) => {
         status: httpStatusText.SUCCESS,
         code: "200",
         data: {
-          user: { id: user._id, email: user.email, username: user.username,token },
+          user: { id: user._id, email: user.email, username: user.username,token,isAdmin:user.isAdmin },
         },
       });
     } else {
