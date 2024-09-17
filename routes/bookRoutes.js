@@ -6,11 +6,12 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const verifyAdmin=require("../middleware/verifyAdmin")
+const verifyAdmin2=require("../middleware/verifyAdmin2")
 
 router.get('/', getAllBooks);
 router.get('/:id', getBookById);
-router.post('/',verifyAdmin, upload.single('file'), createBook);
-router.put('/:id',verifyAdmin, upload.single('file'), updateBookById);
-router.delete('/:id',verifyAdmin, deleteBookById);
+router.post('/',verifyAdmin2, upload.single('file'), createBook);
+router.put('/:id',verifyAdmin2, upload.single('file'), updateBookById);
+router.delete('/:id',verifyAdmin2, deleteBookById);
 
 module.exports = router;
