@@ -8,7 +8,7 @@ const AppError = require("./utils/appError");
 const logger = require("./middleware/logger")
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
-const favoritesRoutes = require("./routes/favoritesRoutes");
+const favoritesRoutes = require("./routes/favouritesRoutes");
 
 //make token save in cookies
 var cookieParser = require("cookie-parser");
@@ -46,6 +46,9 @@ const Usersrouter = require("./routes/userRoutes");
 
 app.use("/users", Usersrouter);
 app.use("/book", bookRouter);
+app.use("/cart", cartRoutes);
+app.use("/orders", orderRoutes);
+app.use("/favorites", favoritesRoutes);
 
 //global middleware for not fond router
 app.all("*", (req, res, next) => {
