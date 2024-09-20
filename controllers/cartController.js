@@ -4,7 +4,7 @@ const AppError = require("../utils/appError");
 const addToCart = async (req, res, next) => {
   try {
     const { bookId } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     let cart = await Cart.findOne({ userId });
     if (!cart) {
@@ -24,7 +24,7 @@ const addToCart = async (req, res, next) => {
 
 const getCart = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const cart = await Cart.findOne({ userId }).populate("items.bookId");
     if (!cart) {
       return next(new AppError("Cart not found", 404));
@@ -38,7 +38,7 @@ const getCart = async (req, res, next) => {
 
 const deleteFromCart = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { bookId } = req.params;
 
     const cart = await Cart.findOne({ userId });

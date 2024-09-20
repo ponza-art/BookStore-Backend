@@ -4,7 +4,7 @@ const AppError = require("../utils/appError");
 const addToFavorites = async (req, res, next) => {
   try {
     const { bookId } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     let favorites = await Favorites.findOne({ userId });
     if (!favorites) {
@@ -24,7 +24,7 @@ const addToFavorites = async (req, res, next) => {
 
 const getFavorites = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const favorites = await Favorites.findOne({ userId }).populate("books.bookId");
     if (!favorites) {
       return next(new AppError("Favorites not found", 404));
@@ -37,7 +37,7 @@ const getFavorites = async (req, res, next) => {
 
 const deleteFromFavorites = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const { bookId } = req.params;
 
     const favorites = await Favorites.findOne({ userId });

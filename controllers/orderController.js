@@ -4,7 +4,7 @@ const AppError = require("../utils/appError");
 const createOrder = async (req, res, next) => {
   try {
     const { books, totalAmount } = req.body;
-    const userId = req.user._id;
+    const userId = req.user.id;
 
     const newOrder = new Order({ userId, books, totalAmount });
     await newOrder.save();
@@ -17,7 +17,7 @@ const createOrder = async (req, res, next) => {
 
 const getAllOrders = async (req, res, next) => {
   try {
-    const userId = req.user._id;
+    const userId = req.user.id;
     const orders = await Order.find({ userId }).populate("books.bookId", "title price");
     res.json(orders);
   } catch (error) {
