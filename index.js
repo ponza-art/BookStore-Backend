@@ -5,11 +5,13 @@ const mongoose = require("mongoose");
 const process = require("process");
 const cors = require("cors");
 const AppError = require("./utils/appError");
-const logger =require("./middleware/logger")
+const logger = require("./middleware/logger")
+
 //make token save in cookies
 var cookieParser = require("cookie-parser");
 app.use(cookieParser());
 app.use(cors({ credentials: true }));
+
 ////////////////////////////////
 const bookRouter = require("./routes/bookRoutes");
 require("dotenv").config();
@@ -18,10 +20,14 @@ const url = process.env.URL;
 
 // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({ extended: false }));
+
 // parse application/json
 app.use(bodyParser.json());
+
 app.use(express.json());
+
 const httpSTatusText = require("./utils/httpStatusText");
+
 //mongoose
 mongoose
   .connect(url)
@@ -50,8 +56,7 @@ app.all("*", (req, res, next) => {
 // glopal handle error from asyncwrapper middleware
 app.use((error, req, res, next) => {
   logger.error(
-    `${req.method} ${req.url} - ${new Date().toISOString()} - Error: ${
-      error.message
+    `${req.method} ${req.url} - ${new Date().toISOString()} - Error: ${error.message
     }`
   );
 
