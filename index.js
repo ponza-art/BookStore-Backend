@@ -6,6 +6,9 @@ const process = require("process");
 const cors = require("cors");
 const AppError = require("./utils/appError");
 const logger = require("./middleware/logger")
+const cartRoutes = require("./routes/cartRoutes");
+const orderRoutes = require("./routes/orderRoutes");
+const favoritesRoutes = require("./routes/favoritesRoutes");
 
 //make token save in cookies
 var cookieParser = require("cookie-parser");
