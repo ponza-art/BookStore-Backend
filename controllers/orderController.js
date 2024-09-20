@@ -3,10 +3,10 @@ const AppError = require("../utils/appError");
 
 const createOrder = async (req, res, next) => {
   try {
-    const { books } = req.body; // Expecting an array of book IDs
+    const { books, totalAmount } = req.body;
     const userId = req.user._id;
 
-    const newOrder = new Order({ userId, books });
+    const newOrder = new Order({ userId, books, totalAmount });
     await newOrder.save();
 
     res.status(201).json(newOrder);
@@ -18,7 +18,7 @@ const createOrder = async (req, res, next) => {
 const getAllOrders = async (req, res, next) => {
   try {
     const userId = req.user._id;
-    const orders = await Order.find({ userId }).populate("books.bookId");
+    const orders = await Order.find({ userId }).populate("books.bookId", "title price");
     res.json(orders);
   } catch (error) {
     next(error);
@@ -28,7 +28,7 @@ const getAllOrders = async (req, res, next) => {
 const getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const order = await Order.findById(id).populate("books.bookId");
+    const order = await Order.findById(id).populate("books.bookId", "title price");
     if (!order) {
       return next(new AppError("Order not found", 404));
     }
