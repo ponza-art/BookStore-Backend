@@ -1,9 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { getOrders, createOrder, deleteOrder } = require("../controllers/orderController");
+const { getAllOrders, createOrder, deleteOrder } = require("../controllers/orderController");
 const verifyUser = require("../middleware/verifyToken");
 
-router.get("/", verifyUser, getOrders);
+router.get("/", verifyUser, getAllOrders);
 router.post("/", verifyUser, createOrder);
 router.delete("/:id", verifyUser, deleteOrder);
 

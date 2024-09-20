@@ -35,25 +35,6 @@ const getCart = async (req, res, next) => {
   }
 };
 
-const updateCart = async (req, res, next) => {
-  try {
-    const userId = req.user._id;
-    const { items } = req.body; // Expecting an array of item objects with bookId
-
-    const cart = await Cart.findOneAndUpdate(
-      { userId },
-      { items },
-      { new: true, runValidators: true }
-    ).populate("items.bookId");
-
-    if (!cart) {
-      return next(new AppError("Cart not found", 404));
-    }
-    res.json(cart);
-  } catch (error) {
-    next(error);
-  }
-};
 
 const deleteFromCart = async (req, res, next) => {
   try {
