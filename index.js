@@ -49,12 +49,7 @@ app.use("/users", Usersrouter);
 app.use("/book", bookRouter);
 app.use("/cart", cartRoutes);
 app.use("/orders", orderRoutes);
-<<<<<<< HEAD
-app.use("/favorites", favoritesRoutes);
-app.use("/category", categoryRoutes);
-=======
 app.use("/favourites", favoritesRoutes);
->>>>>>> bug-fix/cart-fix
 
 //global middleware for not fond router
 app.all("*", (req, res, next) => {
