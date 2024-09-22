@@ -29,6 +29,7 @@ const getOrderById = async (req, res, next) => {
   try {
     const { id } = req.params;
     const order = await Order.findById(id).populate("books.bookId", "title price");
+    
     if (!order) {
       return next(new AppError("Order not found", 404));
     }
