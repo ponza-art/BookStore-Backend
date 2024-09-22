@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 const process = require("process");
 const cors = require("cors");
 const AppError = require("./utils/appError");
-const logger = require("./middleware/logger")
+const logger = require("./middleware/logger");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
 const favoritesRoutes = require("./routes/favouritesRoutes");
@@ -49,8 +49,12 @@ app.use("/users", Usersrouter);
 app.use("/book", bookRouter);
 app.use("/cart", cartRoutes);
 app.use("/orders", orderRoutes);
+<<<<<<< HEAD
 app.use("/favorites", favoritesRoutes);
 app.use("/category", categoryRoutes);
+=======
+app.use("/favourites", favoritesRoutes);
+>>>>>>> bug-fix/cart-fix
 
 //global middleware for not fond router
 app.all("*", (req, res, next) => {
@@ -64,7 +68,8 @@ app.all("*", (req, res, next) => {
 // glopal handle error from asyncwrapper middleware
 app.use((error, req, res, next) => {
   logger.error(
-    `${req.method} ${req.url} - ${new Date().toISOString()} - Error: ${error.message
+    `${req.method} ${req.url} - ${new Date().toISOString()} - Error: ${
+      error.message
     }`
   );
 
@@ -73,7 +78,7 @@ app.use((error, req, res, next) => {
   } else {
     res.status(500).json({ message: "Internal server error" });
   }
-  next()
+  next();
 });
 
 app.listen(port, () => {

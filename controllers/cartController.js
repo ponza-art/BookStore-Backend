@@ -11,7 +11,7 @@ const addToCart = async (req, res, next) => {
       cart = new Cart({ userId, items: [] });
     }
 
-    if (!cart.items.find(item => item.bookId.toString() === bookId)) {
+    if (!cart.items.find((item) => item.bookId.toString() === bookId)) {
       cart.items.push({ bookId });
       await cart.save();
     }
@@ -35,18 +35,16 @@ const getCart = async (req, res, next) => {
   }
 };
 
-
 const deleteFromCart = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const { bookId } = req.params;
+    const { bookId } = req.body;
 
     const cart = await Cart.findOne({ userId });
     if (!cart) {
       return next(new AppError("Cart not found", 404));
     }
-
-    cart.items = cart.items.filter(item => item.bookId.toString() !== bookId);
+    cart.items = cart.items.filter((item) => item.bookId.toString() !== bookId);
     await cart.save();
 
     res.json(cart);
