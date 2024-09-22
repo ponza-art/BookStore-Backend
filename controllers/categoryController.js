@@ -31,21 +31,26 @@ const deleteCategory = async (req, res, next) => {
   }
 };
 const getaCategory = async (req, res, next) => {
-    const { id } = req.params;
-    try {
-      const getaCategory = await Category.findById(id);
-      res.json(getaCategory);
-    } catch (error) {
-      next(new AppError("Failed to update catogery" + error, 500));
-    }
-  };
-  const getallCategory = async (req, res, next) => {
-   
-    try {
-      const getallCategory = await Category.find();
-      res.json(getallCategory);
-    } catch (error) {
-      next(new AppError("Failed to update catogery" + error, 500));
-    }
-  };
-module.exports = { createCategory, updateCategory, deleteCategory,getaCategory,getallCategory };
+  const { id } = req.params;
+  try {
+    const getaCategory = await Category.findById(id);
+    res.json(getaCategory);
+  } catch (error) {
+    next(new AppError("Failed to update catogery" + error, 500));
+  }
+};
+const getallCategory = async (req, res, next) => {
+  try {
+    const getallCategory = await Category.find();
+    res.json(getallCategory);
+  } catch (error) {
+    next(new AppError("Failed to update catogery" + error, 500));
+  }
+};
+module.exports = {
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getaCategory,
+  getallCategory,
+};
