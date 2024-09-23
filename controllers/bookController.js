@@ -84,7 +84,7 @@ const createBook = async (req, res, next) => {
         description,
         price,
         category,
-        author: author._id,
+        author: author.name,
         sourcePath: bookUrl,
         coverImage: coverUrl,
         samplePdf: sampleUrl,
@@ -119,7 +119,7 @@ const updateBookById = async (req, res, next) => {
         return res.status(404).json({ error: "Author not found" });
       }
       // Assign the author's ID to the book's author field
-      req.body.author = author._id;
+      req.body.author = author.name;
     }
 
     if (req.files) {

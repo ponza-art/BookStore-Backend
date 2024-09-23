@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const {getAllUsers,register,login,createAdmin} =require("../controllers/userController");
 const { validateUser, validateLoginUser } = require("../middleware/middelwareUser");
-const verifyAdmin=require("../middleware/verifyAdmin")
+const verifyAdmin=require("../middleware/verifyAdmin2")
 
 
 
