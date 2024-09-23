@@ -56,10 +56,12 @@ const updateAuthor = async (req, res, next) => {
       return res.status(404).json({ error: "Author not found" });
     }
 
+    // Check if there is an image file in the request
     if (req.files && req.files['file']) {
       const imageFile = req.files['file'][0];
 
       if (imageFile) {
+        // Delete previous image from Firebase if exists
         if (authorData.image) {
           const previousImageFileName = authorData.image
             .split("/")
@@ -69,6 +71,7 @@ const updateAuthor = async (req, res, next) => {
           await previousImageFile.delete();
         }
 
+        // Upload new image to Firebase
         const sanitizedImageFilename = imageFile.originalname.replace(/\s+/g, "_");
         const firebaseImageFile = bucket.file(`authors/${sanitizedImageFilename}`);
         const imageStream = firebaseImageFile.createWriteStream({
@@ -77,20 +80,24 @@ const updateAuthor = async (req, res, next) => {
 
         imageStream.end(imageFile.buffer);
 
+        // Wait for the image upload to finish
         await new Promise((resolve, reject) => {
           imageStream.on("finish", resolve);
           imageStream.on("error", reject);
         });
 
+        // Get the new image URL
         const [imageUrl] = await firebaseImageFile.getSignedUrl({
           action: "read",
           expires: "03-09-2491",
         });
 
+        // Update the author document with the new image URL
         req.body.image = imageUrl;
       }
     }
 
+    // Update the author with the new data (including the new image URL if it exists)
     const updatedAuthor = await author.findByIdAndUpdate(id, req.body, {
       new: true,
     });
@@ -111,21 +118,49 @@ const deleteAuthor = async (req, res, next) => {
       return res.status(404).json({ error: "Author not found" });
     }
 
-    if (authorData.image) {
-      const previousImageFileName = authorData.image.split("/").pop().split("?")[0];
-      const previousImageFile = bucket.file(`authors/${previousImageFileName.trim()}`);
+    // Delete all books created by the author
+    const books = await book.find({ author: authorData._id }); // Correct reference
+    for (const b of books) {
+      const previousBookFileName = b.sourcePath
+        .split("/")
+        .pop()
+        .split("?")[0]
+        .trim();
+      const previousBookFile = bucket.file(`books/${previousBookFileName}`);
+      await previousBookFile.delete();
 
-      await previousImageFile.delete();
+      const previousCoverFileName = b.coverImage
+        .split("/")
+        .pop()
+        .split("?")[0]
+        .trim();
+      const previousCoverFile = bucket.file(`covers/${previousCoverFileName}`);
+      await previousCoverFile.delete();
+
+      const previousSampleFileName = b.samplePdf
+        .split("/")
+        .pop()
+        .split("?")[0]
+        .trim();
+      const previousSampleFile = bucket.file(
+        `samples/${previousSampleFileName}`
+      );
+      await previousSampleFile.delete();
+
+      await book.findByIdAndDelete(b._id); // Use the Book model to delete the document
     }
 
-    await author.findByIdAndDelete(id);
+    // Clear the author's books array
+    authorData.books = [];
+    await authorData.save();
 
-    res.status(200).json({ message: "Author deleted successfully" });
+    // Delete the author
+    await author.findByIdAndDelete(id); // Correctly delete the author
+    res.json({ message: "Author and their books deleted successfully" });
   } catch (error) {
-    next(new AppError("Failed to delete author" + error, 500));
+    next(new AppError("Failed to delete author and books: " + error, 500));
   }
 };
-
 
 const getAuthorById = async (req, res, next) => {
   const { id } = req.params;

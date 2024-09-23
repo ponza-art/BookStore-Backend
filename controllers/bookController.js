@@ -232,13 +232,19 @@ const updateBookById = async (req, res, next) => {
 const deleteBookById = async (req, res, next) => {
   try {
     const book = await Book.findById(req.params.id);
+    console.log(book);
+    
 
     if (!book) {
       return res.status(404).json({ error: "Book not found" });
     }
 
     // Remove the book from the author's books array
-    const author = await Author.findById(book.author);
+    const author = await Author.findOne({name : book.author});
+    console.log(book.authorName);
+    
+    console.log(author);
+    
     if (author) {
       author.books = author.books.filter(
         (b) => b.bookId.toString() !== book._id.toString()
