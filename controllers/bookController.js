@@ -112,86 +112,92 @@ const updateBookById = async (req, res, next) => {
       return res.status(404).json({ error: "Book not found" });
     }
 
+    // Update author if authorName is provided
     if (req.body.authorName) {
-      // Find the author by name
       const author = await Author.findOne({ name: req.body.authorName });
       if (!author) {
         return res.status(404).json({ error: "Author not found" });
       }
-      // Assign the author's name to the book's author field
       req.body.author = author.name;
     }
 
+    // Delete previous files and upload new files if provided
     if (req.files) {
-      // Only delete previous files if new ones are being uploaded
-      const deletePreviousFiles = async () => {
-        const deletions = [];
-
-        if (req.files["file"] && book.sourcePath) {
-          const previousBookFileName = book.sourcePath.split("/").pop().split("?")[0];
-          deletions.push(bucket.file(`books/${previousBookFileName.trim()}`).delete());
-        }
-        if (req.files["cover"] && book.coverImage) {
-          const previousCoverFileName = book.coverImage.split("/").pop().split("?")[0];
-          deletions.push(bucket.file(`covers/${previousCoverFileName.trim()}`).delete());
-        }
-        if (req.files["sample"] && book.samplePdf) {
-          const previousSampleFileName = book.samplePdf.split("/").pop().split("?")[0];
-          deletions.push(bucket.file(`samples/${previousSampleFileName.trim()}`).delete());
-        }
-
-        await Promise.all(deletions);
-      };
-
-      // Delete previous files only if corresponding new files are provided
-      await deletePreviousFiles();
-
-      // Upload new files to Firebase
-      const uploadFileToFirebase = (file, folder) => {
-        return new Promise((resolve, reject) => {
-          const sanitizedFilename = file.originalname.replace(/\s+/g, "_").trim();
-          const firebaseFile = bucket.file(`${folder}/${sanitizedFilename}`);
-          const fileStream = firebaseFile.createWriteStream({
-            metadata: { contentType: file.mimetype },
-          });
-
-          fileStream.on("error", (err) => reject(err));
-          fileStream.on("finish", async () => {
-            const [url] = await firebaseFile.getSignedUrl({
-              action: "read",
-              expires: "03-09-2491",
-            });
-            resolve(url);
-          });
-
-          fileStream.end(file.buffer);
-        });
-      };
-
-      const bookFile = req.files["file"] ? req.files["file"][0] : null;
-      const coverImageFile = req.files["cover"] ? req.files["cover"][0] : null;
-      const samplePdfFile = req.files["sample"] ? req.files["sample"][0] : null;
-
       const uploadPromises = [];
-      if (bookFile) uploadPromises.push(uploadFileToFirebase(bookFile, "books"));
-      if (coverImageFile) uploadPromises.push(uploadFileToFirebase(coverImageFile, "covers"));
-      if (samplePdfFile) uploadPromises.push(uploadFileToFirebase(samplePdfFile, "samples"));
+      const deletePromises = [];
 
-      const [bookUrl, coverUrl, sampleUrl] = await Promise.all(uploadPromises);
+      // Delete and upload new book file if provided
+      if (req.files["file"] && book.sourcePath) {
+        const previousBookFileName = book.sourcePath.split("/").pop().split("?")[0].trim();
+        deletePromises.push(bucket.file(`books/${previousBookFileName}`).delete());
 
-      if (bookUrl) req.body.sourcePath = bookUrl;
-      if (coverUrl) req.body.coverImage = coverUrl;
-      if (sampleUrl) req.body.samplePdf = sampleUrl;
+        const bookFile = req.files["file"][0];
+        uploadPromises.push(uploadFileToFirebase(bookFile, "books").then(url => {
+          req.body.sourcePath = url;
+        }));
+      }
+
+      // Delete and upload new cover image file if provided
+      if (req.files["cover"] && book.coverImage) {
+        const previousCoverFileName = book.coverImage.split("/").pop().split("?")[0].trim();
+        deletePromises.push(bucket.file(`covers/${previousCoverFileName}`).delete());
+
+        const coverImageFile = req.files["cover"][0];
+        uploadPromises.push(uploadFileToFirebase(coverImageFile, "covers").then(url => {
+          req.body.coverImage = url;
+        }));
+      }
+
+      // Delete and upload new sample PDF file if provided
+      if (req.files["sample"] && book.samplePdf) {
+        const previousSampleFileName = book.samplePdf.split("/").pop().split("?")[0].trim();
+        deletePromises.push(bucket.file(`samples/${previousSampleFileName}`).delete());
+
+        const samplePdfFile = req.files["sample"][0];
+        uploadPromises.push(uploadFileToFirebase(samplePdfFile, "samples").then(url => {
+          req.body.samplePdf = url;
+        }));
+      }
+
+      // Delete previous files and upload new files
+      await Promise.all(deletePromises);
+      await Promise.all(uploadPromises);
     }
 
-    // Apply changes to the book document
+    // Update the book document with the new data
     Object.assign(book, req.body);
     await book.save();
 
     res.json(book);
   } catch (error) {
-    next(error);
+    next(new AppError("Failed to update book: " + error, 500));
   }
+};
+
+// Helper function to upload file to Firebase and get the URL
+const uploadFileToFirebase = (file, folder) => {
+  return new Promise((resolve, reject) => {
+    const sanitizedFilename = file.originalname.replace(/\s+/g, "_").trim();
+    const firebaseFile = bucket.file(`${folder}/${sanitizedFilename}`);
+    const fileStream = firebaseFile.createWriteStream({
+      metadata: { contentType: file.mimetype },
+    });
+
+    fileStream.on("error", (err) => reject(err));
+    fileStream.on("finish", async () => {
+      try {
+        const [url] = await firebaseFile.getSignedUrl({
+          action: "read",
+          expires: "03-09-2491",
+        });
+        resolve(url);
+      } catch (err) {
+        reject(err);
+      }
+    });
+
+    fileStream.end(file.buffer);
+  });
 };
 
 
