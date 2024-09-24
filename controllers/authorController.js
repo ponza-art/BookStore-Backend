@@ -119,7 +119,7 @@ const deleteAuthor = async (req, res, next) => {
     }
 
     // Delete all books created by the author
-    const books = await book.find({ author: authorData._id }); // Correct reference
+    const books = await book.find({ author: authorData.name }); // Correct reference
     for (const b of books) {
       const previousBookFileName = b.sourcePath
         .split("/")
