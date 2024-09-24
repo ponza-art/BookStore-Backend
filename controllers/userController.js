@@ -1,9 +1,11 @@
-
 const User = require("../models/userSchema");
+const UserGoogle = require("../models/userGoogleSchema");
 const AppError = require("../utils/appError");
 const generateJWT = require("../utils/generateJWT");
 const httpStatusText = require("../utils/httpStatusText");
 const bcrypt = require("bcryptjs");
+const { oauth2Client } = require("../config/googleConfig");
+const axios = require("axios");
 
 const getAllUsers = async (req, res, next) => {
   try {
@@ -30,15 +32,13 @@ const register = async (req, res, next) => {
       email,
       password: hashedPassword,
     });
-    
-  
+
     await newUser.save();
     res.status(201).json({
       status: httpStatusText.SUCCESS,
       code: "200",
       data: { user: newUser },
     });
-    
   } catch (error) {
     return next(new AppError("Registration failed", 500));
   }
@@ -56,8 +56,8 @@ const login = async (req, res, next) => {
       return next(new AppError("Incorrect Email or Password", 400));
     }
     if (user.email == process.env.ADMIN_EMAIL) {
-      user.isAdmin = true;
-    }
+      user.isAdmin = true;
+    }
     const matchedpassword = await bcrypt.compare(password, user.password);
     if (user && matchedpassword) {
       const token = await generateJWT({
@@ -66,18 +66,22 @@ const login = async (req, res, next) => {
         username: user.username,
       });
 
-
       res.status(200).json({
         status: httpStatusText.SUCCESS,
         code: "200",
         data: {
-          user: { id: user._id, email: user.email, username: user.username,token,isAdmin:user.isAdmin },
+          user: {
+            id: user._id,
+            email: user.email,
+            username: user.username,
+            token,
+            isAdmin: user.isAdmin,
+          },
         },
       });
     } else {
       return next(new AppError("Incorrect Email or Password", 500));
     }
-   
   } catch (error) {
     return next(new AppError("Login failed", 500));
   }
@@ -86,12 +90,12 @@ const login = async (req, res, next) => {
 const createAdmin = async (req, res, next) => {
   const { username, email, password } = req.body; // Remove isAdmin from destructuring
   const oldUser = await User.findOne({ email });
-  
+
   if (oldUser) {
     const error = appError.create("Invalid Email", 400, httpStatusText.FAIL);
     return next(error);
   }
-  
+
   if (!username || !email || !password) {
     const error = appError.create(
       "Data is incorrect. Please check all fields and try again.",
@@ -100,7 +104,7 @@ const createAdmin = async (req, res, next) => {
     );
     return next(error);
   }
-  
+
   const hashedPassword = await bcrypt.hash(password, 10);
   const newUser = new User({
     username,
@@ -108,9 +112,9 @@ const createAdmin = async (req, res, next) => {
     password: hashedPassword,
     isAdmin: true, // Force isAdmin to be true for this function
   });
-  
+
   await newUser.save();
-  
+
   res.status(201).json({
     status: httpStatusText.SUCCESS,
     code: "200",
@@ -118,11 +122,50 @@ const createAdmin = async (req, res, next) => {
   });
 };
 
-
+const googleLogin = async (req, res, next) => {
+  try {
+    const { code } = req.query;
+   // console.log("Received code:", code);
+    if (!code) {
+      return next(new AppError("Authorization code is missing", 400));
+    }
+    const googleRes = await oauth2Client.getToken(code);
+    if (!googleRes.tokens) {
+      return next(new AppError("Failed to retrieve tokens", 500));
+    }
+    oauth2Client.setCredentials(googleRes.tokens);
+    const userRes = await axios.get(
+      `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`
+    );
+    if (userRes.status !== 200) {
+      return next(new AppError("Failed to retrieve user info", 500));
+    }
+    const { email, name, picture } = userRes.data;
+    let user = await UserGoogle.findOne({ email });
+    if (!user) {
+      user = await UserGoogle.create({
+        name,
+        email,
+        image: picture,
+      });
+    }
+    const { _id } = user;
+    const token = await generateJWT({ _id, email });
+    res.status(201).json({
+      status: httpStatusText.SUCCESS,
+      code: "200",
+      user,
+      token,
+    });
+  } catch (error) {
+    //console.error("Error in googleLogin:", error);
+    return next(new AppError("Login With Google failed", 500));
+  }
+};
 //
 
 // const logout = (req, res) => {
 //   return res.cookie("token", "").json("ok");
 // };
 
-module.exports = { getAllUsers, register, login,createAdmin};
+module.exports = { getAllUsers, register, login, createAdmin, googleLogin };
