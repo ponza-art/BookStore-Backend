@@ -4,16 +4,55 @@ const bucket = require("../config/firebaseConfig");
 const Book = require("../models/bookSchema");
 const Favorites = require("../models/favoritesSchema");
 const Author = require("../models/authorSchema");
+const Category = require("../models/categoryShema");
+
 const AppError = require("../utils/appError");
 
-const getAllBooks = async (req, res, next) => {
+const getBooks = async (req, res, next) => {
   try {
-    const books = await Book.find();
-    res.json(books);
+    const { author, category, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
+
+    // Build a dynamic filter object
+    const filter = {};
+    
+    if (author) {
+      filter.author = author;
+    }
+
+    if (category) {
+      filter.category = category;
+    }
+
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) {
+        filter.price.$gte = Number(minPrice);  // Greater than or equal to minPrice
+      }
+      if (maxPrice) {
+        filter.price.$lte = Number(maxPrice);  // Less than or equal to maxPrice
+      }
+    }
+
+    // Pagination
+    const skip = (page - 1) * limit;
+    const books = await Book.find(filter)
+      .skip(skip)
+      .limit(Number(limit))
+      .exec();
+
+    // Get total count for pagination
+    const totalBooks = await Book.countDocuments(filter);
+
+    res.json({
+      books,
+      totalPages: Math.ceil(totalBooks / limit),
+      currentPage: Number(page),
+    });
   } catch (error) {
     next(error);
   }
 };
+
 
 const getBookById = async (req, res, next) => {
   try {
@@ -43,6 +82,13 @@ const createBook = async (req, res, next) => {
     if (!author) {
       return res.status(404).json({ error: "Author not found" });
     }
+
+    const categoryDoc = await Category.findOne({ title: category });
+    if (!categoryDoc) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+
     const sanitizedBookFilename = bookFile.originalname.replace(/\s+/g, "_");
     const firebaseBookFile = bucket.file(`books/${sanitizedBookFilename}`);
     const bookStream = firebaseBookFile.createWriteStream({
@@ -69,6 +115,8 @@ const createBook = async (req, res, next) => {
       metadata: { contentType: samplePdfFile.mimetype },
     });
     sampleStream.end(samplePdfFile.buffer);
+
+
     bookStream.on("finish", async () => {
       const [bookUrl] = await firebaseBookFile.getSignedUrl({
         action: "read",
@@ -93,6 +141,13 @@ const createBook = async (req, res, next) => {
         samplePdf: sampleUrl,
       });
       await newBook.save();
+
+      await Category.findByIdAndUpdate(
+        categoryDoc._id,
+        { $push: { books: newBook._id } },
+        { new: true, useFindAndModify: false }
+      );
+
       await Author.findByIdAndUpdate(
         author._id,
         { $push: { books: { bookId: newBook._id } } },
@@ -115,7 +170,8 @@ const updateBookById = async (req, res, next) => {
       return res.status(404).json({ error: "Book not found" });
     }
 
-    // Update author if authorName is provided
+    
+
     if (req.body.authorName) {
       const author = await Author.findOne({ name: req.body.authorName });
       if (!author) {
@@ -213,6 +269,12 @@ const deleteBookById = async (req, res, next) => {
       return res.status(404).json({ error: "Book not found" });
     }
 
+    const category = await Category.findOne({ title: book.category });
+    if (category) {
+      category.books = category.books.filter((b) => b.toString() !== book._id.toString());
+      await category.save();
+    }
+
     // Remove the book from the author's books array
     const author = await Author.findOne({ name: book.author });
     
@@ -277,7 +339,7 @@ const deleteBookById = async (req, res, next) => {
 
 
 module.exports = {
-  getAllBooks,
+  getBooks,
   getBookById,
   createBook,
   updateBookById,

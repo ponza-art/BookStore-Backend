@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   createBook,
-  getAllBooks,
+  getBooks,
   getBookById,
   updateBookById,
   deleteBookById,
@@ -12,7 +12,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const verifyAdmin2 = require("../middleware/verifyAdmin2");
 
-router.get("/", getAllBooks);
+router.get("/", getBooks);
 
 router.get("/:id", getBookById);
 

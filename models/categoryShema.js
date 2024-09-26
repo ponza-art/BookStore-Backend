@@ -8,6 +8,14 @@ const categorySchema = new mongoose.Schema(
       unique: true,
       index: true,
     },
+    books: [
+      {
+        bookId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Book",
+        },
+      },
+    ],
   },
   { timestamps: true }
 );

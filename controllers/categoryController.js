@@ -21,15 +21,26 @@ const updateCategory = async (req, res, next) => {
     next(new AppError("Failed to update catogery" + error, 500));
   }
 };
+
 const deleteCategory = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const deleteCategory = await Category.findByIdAndDelete(id);
-    res.json(deleteCategory);
+    const category = await Category.findById(id);
+    if (!category) {
+      return res.status(404).json({ error: "Category not found" });
+    }
+
+    // Find and delete all related books
+    await Book.deleteMany({ category: category.title });
+
+    await Category.findByIdAndDelete(id);
+
+    res.json({ message: "Category and related books deleted" });
   } catch (error) {
-    next(new AppError("Failed to update catogery" + error, 500));
+    next(new AppError("Failed to delete category: " + error, 500));
   }
 };
+
 const getaCategory = async (req, res, next) => {
   const { id } = req.params;
   try {
@@ -47,6 +58,8 @@ const getallCategory = async (req, res, next) => {
     next(new AppError("Failed to update catogery" + error, 500));
   }
 };
+
+
 module.exports = {
   createCategory,
   updateCategory,
