@@ -165,10 +165,17 @@ const deleteAuthor = async (req, res, next) => {
 const getAuthorById = async (req, res, next) => {
   const { id } = req.params;
   try {
-    const authorData = await author.findById(id);
+    
+    const authorData = await author.findById(id)
+      .populate({
+        path: "books.bookId",  
+        model: "Book",         
+      });
+
+
     res.json(authorData);
   } catch (error) {
-    next(new AppError("Failed to get author" + error, 500));
+    next(new AppError("Failed to get author: " + error, 500));
   }
 };
 
