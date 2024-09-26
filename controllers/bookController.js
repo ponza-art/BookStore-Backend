@@ -1,5 +1,8 @@
+const Cart = require("../models/cartSchema");
+const Order = require("../models/orderSchema");
 const bucket = require("../config/firebaseConfig");
 const Book = require("../models/bookSchema");
+const Favorites = require("../models/favoritesSchema");
 const Author = require("../models/authorSchema");
 const AppError = require("../utils/appError");
 
@@ -205,18 +208,13 @@ const uploadFileToFirebase = (file, folder) => {
 const deleteBookById = async (req, res, next) => {
   try {
     const book = await Book.findById(req.params.id);
-    console.log(book);
     
-
     if (!book) {
       return res.status(404).json({ error: "Book not found" });
     }
 
     // Remove the book from the author's books array
-    const author = await Author.findOne({name : book.author});
-    console.log(book.authorName);
-    
-    console.log(author);
+    const author = await Author.findOne({ name: book.author });
     
     if (author) {
       author.books = author.books.filter(
@@ -224,6 +222,24 @@ const deleteBookById = async (req, res, next) => {
       );
       await author.save();
     }
+
+    // Remove the book from all carts
+    await Cart.updateMany(
+      { 'items.bookId': book._id },
+      { $pull: { items: { bookId: book._id } } }
+    );
+
+    // Remove the book from all favorites
+    await Favorites.updateMany(
+      { 'books.bookId': book._id },
+      { $pull: { books: { bookId: book._id } } }
+    );
+
+    // Remove the book from all orders
+    await Order.updateMany(
+      { 'books.bookId': book._id },
+      { $pull: { books: { bookId: book._id } } }
+    );
 
     // Delete book files from Firebase Storage
     const previousBookFileName = book.sourcePath
@@ -251,13 +267,14 @@ const deleteBookById = async (req, res, next) => {
     await previousSampleFile.delete();
 
     // Remove the book from the database
-    await Book.findByIdAndDelete(book._id); // Use findByIdAndDelete instead of book.remove()
+    await Book.findByIdAndDelete(book._id);
 
-    res.json({ message: "Book deleted" });
+    res.json({ message: "Book and related data deleted" });
   } catch (error) {
     next(new AppError("Failed to delete book: " + error, 500));
   }
 };
+
 
 module.exports = {
   getAllBooks,

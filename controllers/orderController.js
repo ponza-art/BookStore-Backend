@@ -16,6 +16,9 @@ const createOrder = async (req, res, next) => {
       bookId: item.bookId._id,
       title: item.bookId.title,
       price: item.bookId.price,
+      coverImage: item.bookId.coverImage,
+      description: item.bookId.description,
+      sourcePath: item.bookId.sourcePath,
     }));
     const totalAmount = books.reduce((acc, book) => acc + book.price, 0);
     const newOrder = new Order({
@@ -33,15 +36,21 @@ const createOrder = async (req, res, next) => {
     next(error);
   }
 };
+
+
 const getAllOrders = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    const orders = await Order.find({ userId });
-    res.json(orders);
-  } catch (error) {
-    next(error);
-  }
-};
+    try {
+      const userId = req.user.id;
+  
+      // Populate the 'bookId' with its 'title' and 'price' fields
+      const orders = await Order.find({ userId }).populate("books.bookId", "title price coverImage description sourcePath");
+  
+      res.json(orders);
+    } catch (error) {
+      next(error);
+    }
+  };
+  
 
 // const getOrderById = async (req, res, next) => {
 //   try {

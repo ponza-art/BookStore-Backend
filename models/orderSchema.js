@@ -19,8 +19,6 @@ const orderSchema = new mongoose.Schema(
           ref: "Book",
           required: true,
         },
-        title: String,
-        price: Number,
       },
     ],
     totalAmount: {

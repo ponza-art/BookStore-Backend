@@ -118,8 +118,8 @@ const deleteAuthor = async (req, res, next) => {
       return res.status(404).json({ error: "Author not found" });
     }
 
-    // Delete all books created by the author
-    const books = await book.find({ author: authorData.name }); // Correct reference
+    
+    const books = await book.find({ author: authorData.name }); 
     for (const b of books) {
       const previousBookFileName = b.sourcePath
         .split("/")
@@ -147,15 +147,15 @@ const deleteAuthor = async (req, res, next) => {
       );
       await previousSampleFile.delete();
 
-      await book.findByIdAndDelete(b._id); // Use the Book model to delete the document
+      await book.findByIdAndDelete(b._id); 
     }
 
-    // Clear the author's books array
+    
     authorData.books = [];
     await authorData.save();
 
-    // Delete the author
-    await author.findByIdAndDelete(id); // Correctly delete the author
+    
+    await author.findByIdAndDelete(id); 
     res.json({ message: "Author and their books deleted successfully" });
   } catch (error) {
     next(new AppError("Failed to delete author and books: " + error, 500));
