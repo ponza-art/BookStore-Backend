@@ -10,11 +10,18 @@ const AppError = require("../utils/appError");
 
 const getBooks = async (req, res, next) => {
   try {
-    const { author, category, minPrice, maxPrice, page = 1, limit = 10 } = req.query;
+    const {
+      author,
+      category,
+      minPrice,
+      maxPrice,
+      page = 1,
+      limit = 10,
+    } = req.query;
 
     // Build a dynamic filter object
     const filter = {};
-    
+
     if (author) {
       filter.author = author;
     }
@@ -26,10 +33,10 @@ const getBooks = async (req, res, next) => {
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) {
-        filter.price.$gte = Number(minPrice);  // Greater than or equal to minPrice
+        filter.price.$gte = Number(minPrice); // Greater than or equal to minPrice
       }
       if (maxPrice) {
-        filter.price.$lte = Number(maxPrice);  // Less than or equal to maxPrice
+        filter.price.$lte = Number(maxPrice); // Less than or equal to maxPrice
       }
     }
 
@@ -42,9 +49,13 @@ const getBooks = async (req, res, next) => {
 
     // Get total count for pagination
     const totalBooks = await Book.countDocuments(filter);
-
+    const booksDataWithoutSourcePath = books.map(book => {
+      const { sourcePath, ...bookDataWithoutSourcePath } = book.toObject();
+      return bookDataWithoutSourcePath; // 
+    });
+   
     res.json({
-      books,
+      booksDataWithoutSourcePath ,
       totalPages: Math.ceil(totalBooks / limit),
       currentPage: Number(page),
     });
@@ -60,11 +71,48 @@ const getBookById = async (req, res, next) => {
     if (!book) {
       return res.status(404).json({ error: "Book not found" });
     }
-    res.json(book);
+
+    
+    let responseData = {};
+
+    
+    if (!req.user) {
+      const { sourcePath, ...bookDataWithoutsourcePath } = book.toObject(); 
+      responseData = bookDataWithoutsourcePath; 
+    } else {
+      const userId = req.user.id;
+      const orders = await Order.find({ userId: userId });
+      
+      let hasOrderedBook = false;
+
+      
+      for (const order of orders) {
+        for (const bookItem of order.books) {
+          if (bookItem.bookId.toString() === req.params.id) {
+            hasOrderedBook = true; 
+            break; 
+          }
+        }
+        if (hasOrderedBook) break;
+      }
+
+      
+      if (hasOrderedBook) {
+        responseData = book.toObject(); 
+      } else {
+        const { sourcePath, ...bookDataWithoutsourcePath } = book.toObject();
+        responseData = bookDataWithoutsourcePath; 
+      }
+    }
+
+    
+    return res.json(responseData);
   } catch (error) {
     next(error);
   }
 };
+
+
 
 const createBook = async (req, res, next) => {
   try {
@@ -87,7 +135,6 @@ const createBook = async (req, res, next) => {
     if (!categoryDoc) {
       return res.status(404).json({ error: "Category not found" });
     }
-
 
     const sanitizedBookFilename = bookFile.originalname.replace(/\s+/g, "_");
     const firebaseBookFile = bucket.file(`books/${sanitizedBookFilename}`);
@@ -115,7 +162,6 @@ const createBook = async (req, res, next) => {
       metadata: { contentType: samplePdfFile.mimetype },
     });
     sampleStream.end(samplePdfFile.buffer);
-
 
     bookStream.on("finish", async () => {
       const [bookUrl] = await firebaseBookFile.getSignedUrl({
@@ -170,8 +216,6 @@ const updateBookById = async (req, res, next) => {
       return res.status(404).json({ error: "Book not found" });
     }
 
-    
-
     if (req.body.authorName) {
       const author = await Author.findOne({ name: req.body.authorName });
       if (!author) {
@@ -187,35 +231,59 @@ const updateBookById = async (req, res, next) => {
 
       // Delete and upload new book file if provided
       if (req.files["file"] && book.sourcePath) {
-        const previousBookFileName = book.sourcePath.split("/").pop().split("?")[0].trim();
-        deletePromises.push(bucket.file(`books/${previousBookFileName}`).delete());
+        const previousBookFileName = book.sourcePath
+          .split("/")
+          .pop()
+          .split("?")[0]
+          .trim();
+        deletePromises.push(
+          bucket.file(`books/${previousBookFileName}`).delete()
+        );
 
         const bookFile = req.files["file"][0];
-        uploadPromises.push(uploadFileToFirebase(bookFile, "books").then(url => {
-          req.body.sourcePath = url;
-        }));
+        uploadPromises.push(
+          uploadFileToFirebase(bookFile, "books").then((url) => {
+            req.body.sourcePath = url;
+          })
+        );
       }
 
       // Delete and upload new cover image file if provided
       if (req.files["cover"] && book.coverImage) {
-        const previousCoverFileName = book.coverImage.split("/").pop().split("?")[0].trim();
-        deletePromises.push(bucket.file(`covers/${previousCoverFileName}`).delete());
+        const previousCoverFileName = book.coverImage
+          .split("/")
+          .pop()
+          .split("?")[0]
+          .trim();
+        deletePromises.push(
+          bucket.file(`covers/${previousCoverFileName}`).delete()
+        );
 
         const coverImageFile = req.files["cover"][0];
-        uploadPromises.push(uploadFileToFirebase(coverImageFile, "covers").then(url => {
-          req.body.coverImage = url;
-        }));
+        uploadPromises.push(
+          uploadFileToFirebase(coverImageFile, "covers").then((url) => {
+            req.body.coverImage = url;
+          })
+        );
       }
 
       // Delete and upload new sample PDF file if provided
       if (req.files["sample"] && book.samplePdf) {
-        const previousSampleFileName = book.samplePdf.split("/").pop().split("?")[0].trim();
-        deletePromises.push(bucket.file(`samples/${previousSampleFileName}`).delete());
+        const previousSampleFileName = book.samplePdf
+          .split("/")
+          .pop()
+          .split("?")[0]
+          .trim();
+        deletePromises.push(
+          bucket.file(`samples/${previousSampleFileName}`).delete()
+        );
 
         const samplePdfFile = req.files["sample"][0];
-        uploadPromises.push(uploadFileToFirebase(samplePdfFile, "samples").then(url => {
-          req.body.samplePdf = url;
-        }));
+        uploadPromises.push(
+          uploadFileToFirebase(samplePdfFile, "samples").then((url) => {
+            req.body.samplePdf = url;
+          })
+        );
       }
 
       // Delete previous files and upload new files
@@ -259,25 +327,25 @@ const uploadFileToFirebase = (file, folder) => {
   });
 };
 
-
-
 const deleteBookById = async (req, res, next) => {
   try {
     const book = await Book.findById(req.params.id);
-    
+
     if (!book) {
       return res.status(404).json({ error: "Book not found" });
     }
 
     const category = await Category.findOne({ title: book.category });
     if (category) {
-      category.books = category.books.filter((b) => b.toString() !== book._id.toString());
+      category.books = category.books.filter(
+        (b) => b.toString() !== book._id.toString()
+      );
       await category.save();
     }
 
     // Remove the book from the author's books array
     const author = await Author.findOne({ name: book.author });
-    
+
     if (author) {
       author.books = author.books.filter(
         (b) => b.bookId.toString() !== book._id.toString()
@@ -287,19 +355,19 @@ const deleteBookById = async (req, res, next) => {
 
     // Remove the book from all carts
     await Cart.updateMany(
-      { 'items.bookId': book._id },
+      { "items.bookId": book._id },
       { $pull: { items: { bookId: book._id } } }
     );
 
     // Remove the book from all favorites
     await Favorites.updateMany(
-      { 'books.bookId': book._id },
+      { "books.bookId": book._id },
       { $pull: { books: { bookId: book._id } } }
     );
 
     // Remove the book from all orders
     await Order.updateMany(
-      { 'books.bookId': book._id },
+      { "books.bookId": book._id },
       { $pull: { books: { bookId: book._id } } }
     );
 
@@ -336,7 +404,6 @@ const deleteBookById = async (req, res, next) => {
     next(new AppError("Failed to delete book: " + error, 500));
   }
 };
-
 
 module.exports = {
   getBooks,
