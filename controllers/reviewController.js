@@ -24,13 +24,13 @@ exports.getAllReviewsByBook = async (req, res) => {
   try {
     const { bookId } = req.params;
     const reviews = await CommentReview.find({ bookId })
-      .populate("userId", "name")
+      .populate("userId", "username")
       .populate("bookId", "title");
-    if (reviews.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No reviews found for this book" });
-    }
+    // if (reviews.length === 0) {
+    //   return res
+    //     .status(404)
+    //     .json({ message: "No reviews found for this book" });
+    // }
     res.status(200).json(reviews);
   } catch (error) {
     res.status(500).json({ message: "Error retrieving reviews", error });
