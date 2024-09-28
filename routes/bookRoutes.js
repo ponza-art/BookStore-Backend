@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {
   createBook,
+  getAllBooks,
   getBooks,
   getBookById,
   updateBookById,
@@ -13,7 +14,8 @@ const upload = multer({ storage });
 const verifyAdmin2 = require("../middleware/verifyAdmin2");
 const verifyTokenToGetBook = require("../middleware/verifyTokenTogetBook");
 
-router.get("/", getBooks);
+router.get("/", getAllBooks);
+router.get('/filters',getBooks)
 
 router.get("/:id",verifyTokenToGetBook, getBookById);
 

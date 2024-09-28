@@ -405,7 +405,17 @@ const deleteBookById = async (req, res, next) => {
   }
 };
 
+const getAllBooks = async (req, res, next) => {
+  try {
+    const books = await Book.find();
+    res.json(books);
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
+  getAllBooks,
   getBooks,
   getBookById,
   createBook,
