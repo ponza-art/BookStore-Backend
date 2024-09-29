@@ -10,27 +10,27 @@ const bookSchema = new mongoose.Schema({
     required: true,
   },
   price: {
-    type: Number,  // Book price
+    type: Number,  
     required: true,
   },
   category: {
-    type: String,  // Book category
+    type: String,  
     required: true,
   },
   author: {
-    type: String,  // Book author
+    type: String,  
     required: true,
   },
   coverImage: {
-    type: String,  // URL for book cover image
+    type: String,  
     required: true,
   },
   samplePdf: {
-    type: String,  // URL for book sample PDF
+    type: String,  
     required: true,
   },
   sourcePath: {
-    type: String,  // URL for full book file
+    type: String,  
     required: true,
   },
 }, { timestamps: true });

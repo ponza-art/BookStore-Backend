@@ -125,7 +125,7 @@ const createAdmin = async (req, res, next) => {
 const googleLogin = async (req, res, next) => {
   try {
     const { code } = req.query;
-   // console.log("Received code:", code);
+    // console.log("Received code:", code);
     if (!code) {
       return next(new AppError("Authorization code is missing", 400));
     }
@@ -144,17 +144,28 @@ const googleLogin = async (req, res, next) => {
     let user = await UserGoogle.findOne({ email });
     if (!user) {
       user = await UserGoogle.create({
+        id:_id,
         name,
         email,
         image: picture,
       });
     }
-    const { _id } = user;
-    const token = await generateJWT({ _id, email });
-    res.status(201).json({
+
+    const userWithId = {
+      id: user._id, 
+      name: user.name,
+      email: user.email,
+      image: user.image,
+    };
+   
+
+    console.log(userWithId);
+    const token = await generateJWT({ id: userWithId.id, email});
+    res.status(200).json({
       status: httpStatusText.SUCCESS,
       code: "200",
-      user,
+     user: userWithId,
+
       token,
     });
   } catch (error) {

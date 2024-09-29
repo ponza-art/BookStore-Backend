@@ -19,7 +19,7 @@ const getBooks = async (req, res, next) => {
       limit = 10,
     } = req.query;
 
-    // Build a dynamic filter object
+    
     const filter = {};
 
     if (author) {
@@ -33,25 +33,23 @@ const getBooks = async (req, res, next) => {
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) {
-        filter.price.$gte = Number(minPrice); // Greater than or equal to minPrice
+        filter.price.$gte = Number(minPrice); 
       }
       if (maxPrice) {
-        filter.price.$lte = Number(maxPrice); // Less than or equal to maxPrice
+        filter.price.$lte = Number(maxPrice); 
       }
     }
 
-    // Pagination
     const skip = (page - 1) * limit;
     const books = await Book.find(filter)
       .skip(skip)
       .limit(Number(limit))
       .exec();
 
-    // Get total count for pagination
     const totalBooks = await Book.countDocuments(filter);
     const booksDataWithoutSourcePath = books.map(book => {
       const { sourcePath, ...bookDataWithoutSourcePath } = book.toObject();
-      return bookDataWithoutSourcePath; // 
+      return bookDataWithoutSourcePath; 
     });
    
     res.json({
@@ -224,12 +222,12 @@ const updateBookById = async (req, res, next) => {
       req.body.author = author.name;
     }
 
-    // Delete previous files and upload new files if provided
+    
     if (req.files) {
       const uploadPromises = [];
       const deletePromises = [];
 
-      // Delete and upload new book file if provided
+      
       if (req.files["file"] && book.sourcePath) {
         const previousBookFileName = book.sourcePath
           .split("/")
@@ -248,7 +246,7 @@ const updateBookById = async (req, res, next) => {
         );
       }
 
-      // Delete and upload new cover image file if provided
+      
       if (req.files["cover"] && book.coverImage) {
         const previousCoverFileName = book.coverImage
           .split("/")
@@ -267,7 +265,7 @@ const updateBookById = async (req, res, next) => {
         );
       }
 
-      // Delete and upload new sample PDF file if provided
+      
       if (req.files["sample"] && book.samplePdf) {
         const previousSampleFileName = book.samplePdf
           .split("/")
@@ -286,12 +284,12 @@ const updateBookById = async (req, res, next) => {
         );
       }
 
-      // Delete previous files and upload new files
+      
       await Promise.all(deletePromises);
       await Promise.all(uploadPromises);
     }
 
-    // Update the book document with the new data
+    
     Object.assign(book, req.body);
     await book.save();
 
@@ -301,7 +299,7 @@ const updateBookById = async (req, res, next) => {
   }
 };
 
-// Helper function to upload file to Firebase and get the URL
+
 const uploadFileToFirebase = (file, folder) => {
   return new Promise((resolve, reject) => {
     const sanitizedFilename = file.originalname.replace(/\s+/g, "_").trim();
@@ -343,7 +341,7 @@ const deleteBookById = async (req, res, next) => {
       await category.save();
     }
 
-    // Remove the book from the author's books array
+    
     const author = await Author.findOne({ name: book.author });
 
     if (author) {
@@ -353,25 +351,25 @@ const deleteBookById = async (req, res, next) => {
       await author.save();
     }
 
-    // Remove the book from all carts
+    
     await Cart.updateMany(
       { "items.bookId": book._id },
       { $pull: { items: { bookId: book._id } } }
     );
 
-    // Remove the book from all favorites
+    
     await Favorites.updateMany(
       { "books.bookId": book._id },
       { $pull: { books: { bookId: book._id } } }
     );
 
-    // Remove the book from all orders
+    
     await Order.updateMany(
       { "books.bookId": book._id },
       { $pull: { books: { bookId: book._id } } }
     );
 
-    // Delete book files from Firebase Storage
+    
     const previousBookFileName = book.sourcePath
       .split("/")
       .pop()
@@ -396,7 +394,7 @@ const deleteBookById = async (req, res, next) => {
     const previousSampleFile = bucket.file(`samples/${previousSampleFileName}`);
     await previousSampleFile.delete();
 
-    // Remove the book from the database
+    
     await Book.findByIdAndDelete(book._id);
 
     res.json({ message: "Book and related data deleted" });

@@ -31,7 +31,7 @@ const deleteCategory = async (req, res, next) => {
       return res.status(404).json({ error: "Category not found" });
     }
 
-    // Find and delete all related books
+    
     await Book.deleteMany({ category: category.title });
 
     await Category.findByIdAndDelete(id);

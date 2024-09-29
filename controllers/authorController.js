@@ -56,12 +56,12 @@ const updateAuthor = async (req, res, next) => {
       return res.status(404).json({ error: "Author not found" });
     }
 
-    // Check if there is an image file in the request
+    
     if (req.files && req.files['file']) {
       const imageFile = req.files['file'][0];
 
       if (imageFile) {
-        // Delete previous image from Firebase if exists
+        
         if (authorData.image) {
           const previousImageFileName = authorData.image
             .split("/")
@@ -71,7 +71,7 @@ const updateAuthor = async (req, res, next) => {
           await previousImageFile.delete();
         }
 
-        // Upload new image to Firebase
+        
         const sanitizedImageFilename = imageFile.originalname.replace(/\s+/g, "_");
         const firebaseImageFile = bucket.file(`authors/${sanitizedImageFilename}`);
         const imageStream = firebaseImageFile.createWriteStream({
@@ -80,24 +80,24 @@ const updateAuthor = async (req, res, next) => {
 
         imageStream.end(imageFile.buffer);
 
-        // Wait for the image upload to finish
+        
         await new Promise((resolve, reject) => {
           imageStream.on("finish", resolve);
           imageStream.on("error", reject);
         });
 
-        // Get the new image URL
+        
         const [imageUrl] = await firebaseImageFile.getSignedUrl({
           action: "read",
           expires: "03-09-2491",
         });
 
-        // Update the author document with the new image URL
+        
         req.body.image = imageUrl;
       }
     }
 
-    // Update the author with the new data (including the new image URL if it exists)
+    
     const updatedAuthor = await author.findByIdAndUpdate(id, req.body, {
       new: true,
     });
