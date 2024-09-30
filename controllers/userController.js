@@ -125,26 +125,31 @@ const createAdmin = async (req, res, next) => {
 const googleLogin = async (req, res, next) => {
   try {
     const { code } = req.query;
-    // console.log("Received code:", code);
+
     if (!code) {
       return next(new AppError("Authorization code is missing", 400));
     }
+
     const googleRes = await oauth2Client.getToken(code);
     if (!googleRes.tokens) {
       return next(new AppError("Failed to retrieve tokens", 500));
     }
+
     oauth2Client.setCredentials(googleRes.tokens);
+
     const userRes = await axios.get(
       `https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=${googleRes.tokens.access_token}`
     );
+
     if (userRes.status !== 200) {
       return next(new AppError("Failed to retrieve user info", 500));
     }
+
     const { email, name, picture } = userRes.data;
+
     let user = await UserGoogle.findOne({ email });
     if (!user) {
       user = await UserGoogle.create({
-        id:_id,
         name,
         email,
         image: picture,
@@ -152,27 +157,25 @@ const googleLogin = async (req, res, next) => {
     }
 
     const userWithId = {
-      id: user._id, 
+      id: user._id,
       name: user.name,
       email: user.email,
       image: user.image,
     };
-   
 
-    console.log(userWithId);
-    const token = await generateJWT({ id: userWithId.id, email});
+    const token = await generateJWT({ id: userWithId.id, email });
+
     res.status(200).json({
       status: httpStatusText.SUCCESS,
       code: "200",
-     user: userWithId,
-
+      user: userWithId,
       token,
     });
   } catch (error) {
-    //console.error("Error in googleLogin:", error);
     return next(new AppError("Login With Google failed", 500));
   }
 };
+
 //
 
 // const logout = (req, res) => {
