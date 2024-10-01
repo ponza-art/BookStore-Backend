@@ -21,11 +21,11 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    // status: {
-    //   type: String,
-    //   enum: ['allowed', 'blocked'],
-    //   default: 'allowed',
-    // },
+    status: {
+      type: String,
+      enum: ['allowed', 'blocked'],
+      default: 'allowed',
+    },
   },
   { timestamps: true }
 );
