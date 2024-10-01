@@ -182,4 +182,34 @@ const googleLogin = async (req, res, next) => {
 //   return res.cookie("token", "").json("ok");
 // };
 
-module.exports = { getAllUsers, register, login, createAdmin, googleLogin };
+const editUserStatus = async (req, res, next) => {
+  try {
+    const { userId, status } = req.body;
+
+    // Check if the status is valid
+    if (!['allowed', 'blocked'].includes(status)) {
+      return next(new AppError("Invalid status", 400));
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { status },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return next(new AppError("User not found", 404));
+    }
+
+    res.status(200).json({
+      status: httpStatusText.SUCCESS,
+      code: "200",
+      data: { user: updatedUser },
+    });
+  } catch (error) {
+    return next(new AppError("Failed to update user status", 500));
+  }
+};
+
+
+module.exports = { getAllUsers, register, login, createAdmin, googleLogin , editUserStatus};

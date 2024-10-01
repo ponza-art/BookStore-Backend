@@ -3,8 +3,9 @@ const express = require("express");
 const router = express.Router();
 const commentReviewController = require("../controllers/reviewController");
 const authenticate = require("../middleware/verifyToken");
+const userStatus = require("../middleware/userStatus");
 
-router.post("/", authenticate, commentReviewController.createCommentReview);
+router.post("/", authenticate,userStatus, commentReviewController.createCommentReview);
 router.put("/:id", authenticate, commentReviewController.updateCommentReview);
 router.delete(
   "/:id",

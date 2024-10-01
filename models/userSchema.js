@@ -17,10 +17,14 @@ const userSchema = new mongoose.Schema(
       required: true,
       minlength: 6,
     },
-   
     isAdmin: {
       type: Boolean,
       default: false,
+    },
+    status: {
+      type: String,
+      enum: ['allowed', 'blocked'],
+      default: 'allowed',
     },
   },
   { timestamps: true }
