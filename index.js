@@ -12,6 +12,7 @@ const favoritesRoutes = require("./routes/favouritesRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const authorRoutes = require("./routes/authorRoutes");
 const reviewRoutes = require("./routes/reviewRoutes");
+const paymentStripeeRoutes = require("./routes/paymentStripeRoutes");
 const { OAuth2Client } = require("google-auth-library");
 //make token save in cookies
 var cookieParser = require("cookie-parser");
@@ -55,6 +56,7 @@ app.use("/favorites", favoritesRoutes);
 app.use("/category", categoryRoutes);
 app.use("/author", authorRoutes);
 app.use("/review", reviewRoutes);
+app.use("/stripe", paymentStripeeRoutes);
 
 //global middleware for not fond router
 app.all("*", (req, res, next) => {
