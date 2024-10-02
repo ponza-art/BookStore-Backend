@@ -16,7 +16,7 @@ const getBooks = async (req, res, next) => {
       minPrice,
       maxPrice,
       page = 1,
-      limit = 10,
+      limit = 12,
     } = req.query;
 
     
