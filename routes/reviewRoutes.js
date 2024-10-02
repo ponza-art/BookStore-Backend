@@ -6,7 +6,7 @@ const authenticate = require("../middleware/verifyToken");
 const userStatus = require("../middleware/userStatus");
 
 router.post("/", authenticate,userStatus, commentReviewController.createCommentReview);
-router.put("/:id", authenticate, commentReviewController.updateCommentReview);
+router.put("/:id", authenticate,userStatus, commentReviewController.updateCommentReview);
 router.delete(
   "/:id",
   authenticate,

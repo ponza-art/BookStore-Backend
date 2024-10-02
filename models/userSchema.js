@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema(
     status: {
       type: Boolean,
       enum: [true, false],
-      default: false,
+      default: true,
     },
   },
   { timestamps: true }
