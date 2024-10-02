@@ -4,7 +4,7 @@ const checkUserStatus = async (req, res, next) => {
   try {
     const user = req.user; // Assuming user info is stored in req.user after authentication
 
-    if (user.status === 'blocked') {
+    if (user.status === false) {
       return next(new AppError("User is blocked", 403));
     }
 

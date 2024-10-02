@@ -187,7 +187,7 @@ const editUserStatus = async (req, res, next) => {
     const { userId, status } = req.body;
 
     // Check if the status is valid
-    if (!['allowed', 'blocked'].includes(status)) {
+    if (![true, false].includes(status)) {
       return next(new AppError("Invalid status", 400));
     }
 

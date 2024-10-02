@@ -22,9 +22,9 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
     status: {
-      type: String,
-      enum: ['allowed', 'blocked'],
-      default: 'allowed',
+      type: Boolean,
+      enum: [true, false],
+      default: false,
     },
   },
   { timestamps: true }
