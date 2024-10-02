@@ -5,7 +5,7 @@ const checkUserStatus = async (req, res, next) => {
     const user = req.user; 
 
     if (user.status === false) {
-      return new AppError("User is blocked", 403);
+      return next(new AppError("User is blocked", 403));
     }
 
     next(); 
