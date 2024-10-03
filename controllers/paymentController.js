@@ -92,39 +92,44 @@ const createOrder = async (customer, data) => {
 const webhook = async (req, res, next) => {
   let data;
   let eventType;
-  if (endpointSecret) {
-    const signature = req.headers["stripe-signature"];
-    let event;
-    try {
-      event = stripe.webhooks.constructEvent(
-        req.body,
-        signature,
-        endpointSecret
-      );
-    } catch (err) {
-      next(err);
 
-      return;
+  try {
+    if (endpointSecret) {
+      const signature = req.headers["stripe-signature"];
+      let event;
+      try {
+        event = stripe.webhooks.constructEvent(
+          req.body,
+          signature,
+          endpointSecret
+        );
+      } catch (err) {
+        // Invalid signature or event construction error
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+      }
+      data = event.data.object;
+      eventType = event.type;
+    } else {
+      data = req.body.data.object;
+      eventType = req.body.type;
     }
-    data = event.data.object;
-    eventType = event.type;
-  } else {
-    data = req.body.data.object;
-    eventType = req.body.type;
-  }
-  if (eventType === "checkout.session.completed") {
-    stripe.customers
-      .retrieve(data.customer)
-      .then((customer) => {
-        createOrder(customer, data);
-      })
-      .catch((err) => {
-        console.log(err.message);
-      });
-  }
 
-  res.send().end();
-
+    if (eventType === "checkout.session.completed") {
+      try {
+        const customer = await stripe.customers.retrieve(data.customer);
+        await createOrder(customer, data);
+        res.status(200).send('Order created successfully').end();  // Ensure response is sent after order creation
+      } catch (err) {
+        console.error(err.message);
+        next(err);  // Pass to error handling middleware
+      }
+    } else {
+      res.status(400).send('Event type not handled').end(); // Return early if event type is not relevant
+    }
+  } catch (err) {
+    next(err);  // Catch unexpected errors
+  }
 };
+
 
 module.exports = { webhook, createOrder, createCheckoutSession };
