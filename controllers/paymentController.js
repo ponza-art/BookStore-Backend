@@ -9,14 +9,7 @@ require("dotenv").config();
 let endpointSecret;
 endpointSecret = "whsec_xsYAPw8Ak4f5y0BaNkyc4uCOK6Quxfg9"; // Replace with your actual endpoint secret
 
-// Middleware setup for Stripe webhook raw body parsing
-const app = express();
-app.use(express.json()); // Use this for other routes
-app.post(
-  "/webhook",
-  bodyParser.raw({ type: "application/json" }), // Ensure raw body is used for Stripe webhooks
-  webhook
-);
+
 
 // Function to create a checkout session
 const createCheckoutSession = async (req, res, next) => {
