@@ -4,7 +4,7 @@ const Order = require("../models/orderSchema");
 const stripe = Stripe(process.env.STRIPE_KEY);
 require("dotenv").config();
 let endpointSecret;
-// endpointSecret = "whsec_xsYAPw8Ak4f5y0BaNkyc4uCOK6Quxfg9";
+endpointSecret = "whsec_xsYAPw8Ak4f5y0BaNkyc4uCOK6Quxfg9";
 const createCheckoutSession = async (req, res, next) => {
   try {
     const userId = req.body.userId;
@@ -90,29 +90,41 @@ const createOrder = async (customer, data) => {
 };
 
 const webhook = async (req, res, next) => {
-  const sig = req.headers["stripe-signature"];
-  let event;
+  let data;
+  let eventType;
+  if (endpointSecret) {
+    const signature = req.headers["stripe-signature"];
+    let event;
+    try {
+      event = stripe.webhooks.constructEvent(
+        request.body,
+        signature,
+        endpointSecret
+      );
+    } catch (err) {
+      next(err);
 
-  try {
-    // Check and construct event using the raw body and Stripe endpoint secret
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_ENDPOINT_SECRET);
-  } catch (err) {
-    // If signature verification fails
-    console.log(`⚠️  Webhook signature verification failed.`, err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
+      return;
+    }
+    data = event.data.object;
+    eventType = event.type;
+  } else {
+    data = req.body.data.object;
+    eventType = req.body.type;
   }
-
-  const data = event.data.object;
-  const eventType = event.type;
-
-  // Handle event types (checkout session completion)
   if (eventType === "checkout.session.completed") {
-    const customer = await stripe.customers.retrieve(data.customer);
-    createOrder(customer, data); // Process the order
+    stripe.customers
+      .retrieve(data.customer)
+      .then((customer) => {
+        createOrder(customer, data);
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
   }
 
-  res.json({ received: true });
-};
+  res.send().end();
 
+};
 
 module.exports = { webhook, createOrder, createCheckoutSession };
