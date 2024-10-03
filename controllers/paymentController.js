@@ -1,15 +1,10 @@
-const express = require("express");
-const bodyParser = require("body-parser");
 const Stripe = require("stripe");
 const Cart = require("../models/cartSchema");
 const Order = require("../models/orderSchema");
 const stripe = Stripe(process.env.STRIPE_KEY);
 require("dotenv").config();
 
-let endpointSecret;
-endpointSecret = "whsec_xsYAPw8Ak4f5y0BaNkyc4uCOK6Quxfg9"; // Replace with your actual endpoint secret
-
-
+let endpointSecret = "whsec_xsYAPw8Ak4f5y0BaNkyc4uCOK6Quxfg9"; // Replace with your actual endpoint secret
 
 // Function to create a checkout session
 const createCheckoutSession = async (req, res, next) => {
