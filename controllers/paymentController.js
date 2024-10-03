@@ -4,7 +4,7 @@ const Order = require("../models/orderSchema");
 const stripe = Stripe(process.env.STRIPE_KEY);
 require("dotenv").config();
 let endpointSecret;
-//endpointSecret = "whsec_d855d5f5db17c13da39293a2ede1d446eb94d243c45c4b4c31f7551af1f53a22";
+endpointSecret = "whsec_xsYAPw8Ak4f5y0BaNkyc4uCOK6Quxfg9";
 const createCheckoutSession = async (req, res, next) => {
   try {
     const userId = req.body.userId;
