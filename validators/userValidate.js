@@ -7,4 +7,9 @@ const userSchemaJoi = Joi.object({
   isAdmin: Joi.boolean().optional(),
 });
 
-module.exports = { userSchemaJoi };
+const userUpdateSchemaJoi = Joi.object({
+  username: Joi.string().min(3).max(30).required(),
+  email: Joi.string().email().required(),
+});
+
+module.exports = { userSchemaJoi, userUpdateSchemaJoi };

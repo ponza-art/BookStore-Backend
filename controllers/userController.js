@@ -6,6 +6,8 @@ const httpStatusText = require("../utils/httpStatusText");
 const bcrypt = require("bcryptjs");
 const { oauth2Client } = require("../config/googleConfig");
 const axios = require("axios");
+const { userUpdateSchemaJoi } = require("../validators/userValidate");  
+
 
 const getAllUsers = async (req, res, next) => {
   try {
@@ -91,7 +93,7 @@ const login = async (req, res, next) => {
 };
 
 const createAdmin = async (req, res, next) => {
-  const { username, email, password } = req.body; // Remove isAdmin from destructuring
+  const { username, email, password } = req.body; 
   const oldUser = await User.findOne({ email });
 
   if (oldUser) {
@@ -113,7 +115,7 @@ const createAdmin = async (req, res, next) => {
     username,
     email,
     password: hashedPassword,
-    isAdmin: true, // Force isAdmin to be true for this function
+    isAdmin: true, 
   });
 
   await newUser.save();
@@ -189,7 +191,6 @@ const editUserStatus = async (req, res, next) => {
   try {
     const { userId, status } = req.body;
 
-    // Check if the status is valid
     if (![true, false].includes(status)) {
       return next(new AppError("Invalid status", 400));
     }
@@ -214,5 +215,65 @@ const editUserStatus = async (req, res, next) => {
   }
 };
 
+const updateProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+    const { username, email } = req.body;
 
-module.exports = { getAllUsers, register, login, createAdmin, googleLogin , editUserStatus};
+    const { error } = userUpdateSchemaJoi.validate({ username, email });
+    if (error) {
+      return next(new AppError(`Validation error: ${error.details[0].message}`, 400));
+    }
+
+    const existingUser = await User.findOne({ email });
+    if (existingUser && existingUser._id.toString() !== userId) {
+      return next(new AppError("Email already in use by another user", 400));
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username, email },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return next(new AppError("User not found", 404));
+    }
+
+    res.status(200).json({
+      status: httpStatusText.SUCCESS,
+      code: "200",
+      data: { user: updatedUser },
+    });
+  } catch (error) {
+    return next(new AppError("Profile update failed", 500));
+  }
+};
+
+
+
+
+const getUserProfile = async (req, res, next) => {
+  try {
+    const userId = req.user.id;  
+
+    const user = await User.findById(userId, { password: 0, __v: 0 });
+
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    res.status(200).json({
+      status: httpStatusText.SUCCESS,
+      code: "200",
+      data: { user },
+    });
+  } catch (error) {
+    return next(new AppError("Failed to retrieve user data", 500));
+  }
+};
+
+module.exports = { getAllUsers, register, login, createAdmin, googleLogin, editUserStatus, updateProfile,getUserProfile };
+
+
+
