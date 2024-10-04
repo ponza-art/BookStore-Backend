@@ -112,18 +112,26 @@ const getBookById = async (req, res, next) => {
 
 
 
+
+
+
+
 const createBook = async (req, res, next) => {
   try {
-    const { title, description, price, category, authorName } = req.body;
+    const { title, description, price, category, authorName, discountPercentage } = req.body;
+
+    // Calculate original and discounted price
+    const originalPrice = price;
+    const discountedPrice = price - (price * (discountPercentage / 100));
+
     const bookFile = req.files["file"][0];
     const coverImageFile = req.files["cover"][0];
     const samplePdfFile = req.files["sample"][0];
 
     if (!bookFile || !coverImageFile || !samplePdfFile) {
-      return res
-        .status(400)
-        .json({ error: "All files (book, cover, sample) must be provided" });
+      return res.status(400).json({ error: "All files (book, cover, sample) must be provided" });
     }
+    
     const author = await Author.findOne({ name: authorName });
     if (!author) {
       return res.status(404).json({ error: "Author not found" });
@@ -140,22 +148,16 @@ const createBook = async (req, res, next) => {
       metadata: { contentType: bookFile.mimetype },
     });
     bookStream.end(bookFile.buffer);
-    const sanitizedCoverFilename = coverImageFile.originalname.replace(
-      /\s+/g,
-      "_"
-    );
+    
+    const sanitizedCoverFilename = coverImageFile.originalname.replace(/\s+/g, "_");
     const firebaseCoverFile = bucket.file(`covers/${sanitizedCoverFilename}`);
     const coverStream = firebaseCoverFile.createWriteStream({
       metadata: { contentType: coverImageFile.mimetype },
     });
     coverStream.end(coverImageFile.buffer);
-    const sanitizedSampleFilename = samplePdfFile.originalname.replace(
-      /\s+/g,
-      "_"
-    );
-    const firebaseSampleFile = bucket.file(
-      `samples/${sanitizedSampleFilename}`
-    );
+    
+    const sanitizedSampleFilename = samplePdfFile.originalname.replace(/\s+/g, "_");
+    const firebaseSampleFile = bucket.file(`samples/${sanitizedSampleFilename}`);
     const sampleStream = firebaseSampleFile.createWriteStream({
       metadata: { contentType: samplePdfFile.mimetype },
     });
@@ -174,10 +176,14 @@ const createBook = async (req, res, next) => {
         action: "read",
         expires: "03-09-2491",
       });
+      
       const newBook = new Book({
         title,
         description,
-        price,
+        price: originalPrice,  // Save original price
+        discountPercentage: discountPercentage || 0, // Set discount percentage
+        originalPrice: originalPrice,  // Save original price
+        discountedPrice: discountedPrice,  // Save discounted price
         category,
         author: author.name,
         sourcePath: bookUrl,
@@ -197,8 +203,10 @@ const createBook = async (req, res, next) => {
         { $push: { books: { bookId: newBook._id } } },
         { new: true, useFindAndModify: false }
       );
+
       res.status(201).json({ book: newBook, author: author.name });
     });
+
     bookStream.on("error", (error) => next(error));
     coverStream.on("error", (error) => next(error));
     sampleStream.on("error", (error) => next(error));
@@ -206,6 +214,8 @@ const createBook = async (req, res, next) => {
     next(error);
   }
 };
+
+
 
 const updateBookById = async (req, res, next) => {
   try {
@@ -222,12 +232,18 @@ const updateBookById = async (req, res, next) => {
       req.body.author = author.name;
     }
 
-    
+    if (req.body.discountPercentage !== undefined) {
+      req.body.discountPercentage = Number(req.body.discountPercentage); // Ensure it's a number
+    }
+
+    // Calculate original and discounted price
+    const originalPrice = req.body.price !== undefined ? req.body.price : book.price;
+    const discountedPrice = originalPrice - (originalPrice * (req.body.discountPercentage || book.discountPercentage) / 100);
+
     if (req.files) {
       const uploadPromises = [];
       const deletePromises = [];
 
-      
       if (req.files["file"] && book.sourcePath) {
         const previousBookFileName = book.sourcePath
           .split("/")
@@ -246,7 +262,6 @@ const updateBookById = async (req, res, next) => {
         );
       }
 
-      
       if (req.files["cover"] && book.coverImage) {
         const previousCoverFileName = book.coverImage
           .split("/")
@@ -265,7 +280,6 @@ const updateBookById = async (req, res, next) => {
         );
       }
 
-      
       if (req.files["sample"] && book.samplePdf) {
         const previousSampleFileName = book.samplePdf
           .split("/")
@@ -284,13 +298,15 @@ const updateBookById = async (req, res, next) => {
         );
       }
 
-      
       await Promise.all(deletePromises);
       await Promise.all(uploadPromises);
     }
 
-    
-    Object.assign(book, req.body);
+    Object.assign(book, {
+      ...req.body,
+      originalPrice: originalPrice,
+      discountedPrice: discountedPrice,
+    });
     await book.save();
 
     res.json(book);
@@ -298,6 +314,7 @@ const updateBookById = async (req, res, next) => {
     next(new AppError("Failed to update book: " + error, 500));
   }
 };
+
 
 
 const uploadFileToFirebase = (file, folder) => {

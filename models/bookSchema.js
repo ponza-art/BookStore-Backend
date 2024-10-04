@@ -9,8 +9,12 @@ const bookSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  price: {
-    type: Number,  
+  originalPrice: {
+    type: Number,
+    required: true,
+  },
+  discountedPrice: {
+    type: Number,
     required: true,
   },
   category: {
@@ -33,6 +37,10 @@ const bookSchema = new mongoose.Schema({
     type: String,  
     required: true,
   },
+  discountPercentage: {
+    type: Number,   
+    default: 0,     
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model("Book", bookSchema);
