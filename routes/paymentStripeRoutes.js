@@ -7,7 +7,7 @@ const bodyParser = require('body-parser');
 
 
 router.post("/create-checkout-session", verifyToken, createCheckoutSession);
-router.post('/webhook', bodyParser.raw({ type: 'application/json' }), webhook);
+router.post('/webhook',  webhook);
 
 
 module.exports = router;
