@@ -9,4 +9,6 @@ module.exports = joi.object({
   coverImage: joi.string().required(),
   samplePdf: joi.string().required(),
   sourcePath: joi.string().required(),
+  discountPercentage: joi.number().optional(), 
+
 });
