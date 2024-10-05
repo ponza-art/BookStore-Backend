@@ -12,7 +12,7 @@ const createOrder = async (req, res, next) => {
 
         const cart = await Cart.findOne({ userId }).populate(
             "items.bookId",
-            "title price coverImage description sourcePath"
+            "title originalPrice coverImage description sourcePath"
         );
 
         if (!cart || cart.items.length === 0) {
@@ -22,13 +22,14 @@ const createOrder = async (req, res, next) => {
         const books = cart.items.map((item) => ({
             bookId: item.bookId._id,
             title: item.bookId.title,
-            price: item.bookId.originalPrice,
+            price: item.bookId.originalPrice,  
             coverImage: item.bookId.coverImage,
             description: item.bookId.description,
             sourcePath: item.bookId.sourcePath,
         }));
+        
 
-        const totalAmount = books.reduce((acc, book) => acc + book.originalPrice, 0);
+        const totalAmount = books.reduce((acc, book) => acc + book.price, 0);
 
         const newOrder = new Order({
             userId,
