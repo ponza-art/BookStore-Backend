@@ -22,13 +22,13 @@ const createOrder = async (req, res, next) => {
         const books = cart.items.map((item) => ({
             bookId: item.bookId._id,
             title: item.bookId.title,
-            price: item.bookId.price,
+            price: item.bookId.originalPrice,
             coverImage: item.bookId.coverImage,
             description: item.bookId.description,
             sourcePath: item.bookId.sourcePath,
         }));
 
-        const totalAmount = books.reduce((acc, book) => acc + book.price, 0);
+        const totalAmount = books.reduce((acc, book) => acc + book.originalPrice, 0);
 
         const newOrder = new Order({
             userId,
@@ -57,7 +57,7 @@ const createOrder = async (req, res, next) => {
             items: books.map(book => ({
                 name: book.title,
                 description: book.description,
-                amount_cents: book.price * 100,
+                amount_cents: book.originalPrice * 100,
                 quantity: 1
             }))
         });
