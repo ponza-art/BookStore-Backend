@@ -91,11 +91,13 @@ const createOrder = async (req, res, next) => {
 
 
         const paymentToken = paymentKey.data.token;
+        if(paymentToken){
 
-        await newOrder.save();
-
-        cart.items = [];
-        await cart.save();
+            await newOrder.save();
+    
+            cart.items = [];
+            await cart.save();
+        }
 
         res.status(201).json({
             order: newOrder,
