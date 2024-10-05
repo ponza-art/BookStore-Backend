@@ -12,7 +12,7 @@ const createOrder = async (req, res, next) => {
 
         const cart = await Cart.findOne({ userId }).populate(
             "items.bookId",
-            "title originalPrice coverImage description sourcePath"
+            "title discountedPrice coverImage description sourcePath"
         );
 
         if (!cart || cart.items.length === 0) {
@@ -22,7 +22,7 @@ const createOrder = async (req, res, next) => {
         const books = cart.items.map((item) => ({
             bookId: item.bookId._id,
             title: item.bookId.title,
-            price: item.bookId.originalPrice,  
+            price: item.bookId.discountedPrice,  
             coverImage: item.bookId.coverImage,
             description: item.bookId.description,
             sourcePath: item.bookId.sourcePath,
@@ -40,7 +40,7 @@ const createOrder = async (req, res, next) => {
 
         await newOrder.save();
 
-        cart.items = [];
+        // cart.items = [];
         await cart.save();
 
         const authToken = await axios.post('https://accept.paymob.com/api/auth/tokens', {
@@ -49,18 +49,24 @@ const createOrder = async (req, res, next) => {
         });
 
         const token = authToken.data.token;
+        console.log(token+ "1");
+        
 
         const paymobOrder = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
             auth_token: token,
             delivery_needed: "false",
             amount_cents: totalAmount * 100,
             currency: "EGP",
-            items: books.map(book => ({
+            items: books.map(book => (
+                console.log(book),
+
+                {
                 name: book.title,
                 description: book.description,
-                amount_cents: book.originalPrice * 100,
+                amount_cents: book.price * 100,
                 quantity: 1
-            }))
+            }            
+        ))
         });
 
         const orderId = paymobOrder.data.id;
