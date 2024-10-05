@@ -3,13 +3,11 @@ const Order = require("../models/orderSchema");
 const Cart = require("../models/cartSchema");
 const AppError = require("../utils/appError");
 
-
-const createOrder = async (req, res, next) => {
+const processOrderAndPayment = async (req, res, next) => {
     try {
         const userId = req.user.id;
 
-
-
+        // Step 1: Fetch user's cart
         const cart = await Cart.findOne({ userId }).populate(
             "items.bookId",
             "title discountedPrice coverImage description sourcePath"
@@ -19,60 +17,48 @@ const createOrder = async (req, res, next) => {
             return next(new AppError("Cart is empty", 400));
         }
 
+        // Step 2: Map cart items to books for order
         const books = cart.items.map((item) => ({
             bookId: item.bookId._id,
             title: item.bookId.title,
-            price: item.bookId.discountedPrice,  
+            price: item.bookId.discountedPrice,
             coverImage: item.bookId.coverImage,
             description: item.bookId.description,
             sourcePath: item.bookId.sourcePath,
         }));
-        
 
+        // Calculate total amount
         const totalAmount = books.reduce((acc, book) => acc + book.price, 0);
 
-        const newOrder = new Order({
-            userId,
-            cartId: cart._id,
-            books,
-            totalAmount,
-        });
-
-     
-
-        const authToken = await axios.post('https://accept.paymob.com/api/auth/tokens', {
+        // Step 3: Get authentication token from Paymob
+        const authResponse = await axios.post('https://accept.paymob.com/api/auth/tokens', {
             api_key: process.env.PAYMOB_API_KEY,
-
         });
 
-        const token = authToken.data.token;
-        console.log(token+ "1");
-        
+        const token = authResponse.data.token;
 
-        const paymobOrder = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
+        // Step 4: Create Paymob order
+        const paymobOrderResponse = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
             auth_token: token,
             delivery_needed: "false",
             amount_cents: totalAmount * 100,
             currency: "EGP",
-            items: books.map(book => (
-                console.log(book),
-
-                {
+            items: books.map(book => ({
                 name: book.title,
                 description: book.description,
                 amount_cents: book.price * 100,
                 quantity: 1
-            }            
-        ))
+            })),
         });
 
-        const orderId = paymobOrder.data.id;
+        const paymobOrderId = paymobOrderResponse.data.id;
 
-        const paymentKey = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
+        // Step 5: Generate payment key for iFrame
+        const paymentKeyResponse = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
             auth_token: token,
             amount_cents: totalAmount * 100,
             expiration: 3600,
-            order_id: orderId,
+            order_id: paymobOrderId,
             billing_data: {
                 email: req.user.email,
                 first_name: req.user.firstName || req.user.username,
@@ -89,19 +75,12 @@ const createOrder = async (req, res, next) => {
             integration_id: process.env.PAYMOB_INTEGRATION_ID,
         });
 
+        const paymentToken = paymentKeyResponse.data.token;
 
-        const paymentToken = paymentKey.data.token;
-        if(paymentToken){
-
-            await newOrder.save();
-    
-            cart.items = [];
-            await cart.save();
-        }
-
-        res.status(201).json({
-            order: newOrder,
+        // Step 6: Return paymentToken to the frontend to load the iFrame
+        res.status(200).json({
             paymentToken,
+            paymobOrderId
         });
 
     } catch (error) {
@@ -109,5 +88,38 @@ const createOrder = async (req, res, next) => {
     }
 };
 
+const confirmPaymentAndUpdateOrder = async (req, res, next) => {
+    try {
+        const { order_id, success } = req.body;
 
-module.exports = { createOrder }
+        if (!success) {
+            return next(new AppError('Payment failed', 400));
+        }
+
+        // Step 7: Retrieve the order by Paymob order ID
+        const order = await Order.findOne({ paymobOrderId: order_id });
+
+        if (!order) {
+            return next(new AppError('Order not found', 404));
+        }
+
+        // Step 8: Update the order status and finalize
+        order.status = "Paid";
+        await order.save();
+
+        // Step 9: Clear the user's cart
+        const cart = await Cart.findById(order.cartId);
+        cart.items = [];
+        await cart.save();
+
+        res.status(200).json({
+            status: "success",
+            message: "Order confirmed and updated"
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports = { processOrderAndPayment, confirmPaymentAndUpdateOrder };
