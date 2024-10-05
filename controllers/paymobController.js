@@ -38,10 +38,7 @@ const createOrder = async (req, res, next) => {
             totalAmount,
         });
 
-        await newOrder.save();
-
-        cart.items = [];
-        await cart.save();
+     
 
         const authToken = await axios.post('https://accept.paymob.com/api/auth/tokens', {
             api_key: process.env.PAYMOB_API_KEY,
@@ -94,6 +91,11 @@ const createOrder = async (req, res, next) => {
 
 
         const paymentToken = paymentKey.data.token;
+
+        await newOrder.save();
+
+        cart.items = [];
+        await cart.save();
 
         res.status(201).json({
             order: newOrder,
