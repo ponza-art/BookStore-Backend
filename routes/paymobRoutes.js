@@ -1,12 +1,12 @@
 const express = require("express");
 const router = express.Router();
-const { processOrderAndPayment, confirmPaymentAndUpdateOrder } = require("../controllers/paymobController");
+const { createOrder, confirmPayment } = require("../controllers/paymobController");
 const verifyToken = require("../middleware/verifyToken");
 
-// Route to process order and generate payment token for iframe
-router.post("/", verifyToken, processOrderAndPayment);
+// Route for creating order and getting payment token
+router.post("/", verifyToken, createOrder);
 
-// Route to confirm payment after iframe interaction (combined webhook handling)
-router.post("/confirm-payment", verifyToken, confirmPaymentAndUpdateOrder);
+// Route for confirming payment after iframe
+router.post("/confirm-payment", verifyToken, confirmPayment);
 
 module.exports = router;
