@@ -56,6 +56,5 @@ const deleteMessage = async (req, res, next) => {
 module.exports = {
   createMessage,
   getMessages,
-  updateMessageStatus,
   deleteMessage,
 };
