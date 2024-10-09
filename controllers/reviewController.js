@@ -125,10 +125,7 @@ exports.getAllReviewsByUser = async (req, res) => {
 
 exports.getAllReviews = async (req, res) => {
   try {
-    const isAdmin = req.user.role === "admin"; // Assuming user role is stored in req.user
-    if (!isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admins only." });
-    }
+    
     const reviews = await CommentReview.find()
       .populate("bookId", "title")
       .populate("userId", "username");
@@ -144,10 +141,6 @@ exports.getAllReviews = async (req, res) => {
 
 exports.adminDeleteReview = async (req, res) => {
   try {
-    const isAdmin = req.user.role === "admin";
-    if (!isAdmin) {
-      return res.status(403).json({ message: "Access denied. Admins only." });
-    }
     const commentReview = await CommentReview.findById(req.params.id);
     if (!commentReview) {
       return res.status(404).json({ message: "Review not found" });
