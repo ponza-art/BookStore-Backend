@@ -15,6 +15,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const paymentStripeeRoutes = require("./routes/paymentStripeRoutes");
 const paymobRoutes = require("./routes/paymobRoutes");
 const contactRoutes = require("./routes/contactRoutes");
+const cardRoutes = require("./routes/cardRoutes");
 const { OAuth2Client } = require("google-auth-library");
 //make token save in cookies
 var cookieParser = require("cookie-parser");
@@ -61,6 +62,7 @@ app.use("/review", reviewRoutes);
 app.use("/stripe", paymentStripeeRoutes);
 app.use("/paymob", paymobRoutes);
 app.use("/contact", contactRoutes); 
+app.use("/card", cardRoutes); 
 
 
 
