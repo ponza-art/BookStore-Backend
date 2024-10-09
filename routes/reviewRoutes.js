@@ -24,7 +24,7 @@ router.get("/user/reviews", authenticate, commentReviewController.getAllReviewsB
 
 router.get("/all-reviews", verifyAdmin, commentReviewController.getAllReviews);
 
-router.delete("/:id", verifyAdmin, commentReviewController.adminDeleteReview);
+router.delete("/admin/:id", verifyAdmin, commentReviewController.adminDeleteReview);
 
 
 module.exports = router;
