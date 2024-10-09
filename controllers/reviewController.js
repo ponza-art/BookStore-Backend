@@ -108,3 +108,53 @@ exports.deleteCommentReview = async (req, res) => {
     res.status(500).json({ message: "Error deleting review", error });
   }
 };
+
+exports.getAllReviewsByUser = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const reviews = await CommentReview.find({ userId })
+      .populate("bookId", "title")
+      .populate("userId", "username");
+
+    res.status(200).json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving user's reviews", error });
+  }
+};
+
+
+exports.getAllReviews = async (req, res) => {
+  try {
+    const isAdmin = req.user.role === "admin"; // Assuming user role is stored in req.user
+    if (!isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+    const reviews = await CommentReview.find()
+      .populate("bookId", "title")
+      .populate("userId", "username");
+
+    res.status(200).json(reviews);
+  } catch (error) {
+    res.status(500).json({ message: "Error retrieving all reviews", error });
+  }
+};
+
+
+
+
+exports.adminDeleteReview = async (req, res) => {
+  try {
+    const isAdmin = req.user.role === "admin";
+    if (!isAdmin) {
+      return res.status(403).json({ message: "Access denied. Admins only." });
+    }
+    const commentReview = await CommentReview.findById(req.params.id);
+    if (!commentReview) {
+      return res.status(404).json({ message: "Review not found" });
+    }
+    await CommentReview.deleteOne({ _id: req.params.id });
+    res.status(200).json({ message: "Review deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting review", error });
+  }
+};
