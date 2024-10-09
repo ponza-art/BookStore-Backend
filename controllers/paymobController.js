@@ -3,12 +3,9 @@ const Order = require("../models/orderSchema");
 const Cart = require("../models/cartSchema");
 const AppError = require("../utils/appError");
 
-
 const createOrder = async (req, res, next) => {
     try {
         const userId = req.user.id;
-
-
 
         const cart = await Cart.findOne({ userId }).populate(
             "items.bookId",
@@ -22,14 +19,13 @@ const createOrder = async (req, res, next) => {
         const books = cart.items.map((item) => ({
             bookId: item.bookId._id,
             title: item.bookId.title,
-            price: item.bookId.discountedPrice,  
+            price: Math.round(item.bookId.discountedPrice * 100) / 100,  // rounding to ensure correct value
             coverImage: item.bookId.coverImage,
             description: item.bookId.description,
             sourcePath: item.bookId.sourcePath,
         }));
-        
 
-        const totalAmount = books.reduce((acc, book) => acc + book.price, 0);
+        const totalAmount = books.reduce((acc, book) => acc + book.price, 0).toFixed(2); // rounding total amount
 
         const newOrder = new Order({
             userId,
@@ -38,46 +34,37 @@ const createOrder = async (req, res, next) => {
             totalAmount,
         });
 
-     
-
         const authToken = await axios.post('https://accept.paymob.com/api/auth/tokens', {
             api_key: process.env.PAYMOB_API_KEY,
-
         });
 
         const token = authToken.data.token;
-        console.log(token+ "1");
-        
 
         const paymobOrder = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
             auth_token: token,
             delivery_needed: "false",
-            amount_cents: totalAmount * 100,
+            amount_cents: Math.round(totalAmount * 100), // amount in cents
             currency: "EGP",
-            items: books.map(book => (
-                console.log(book),
-
-                {
+            items: books.map(book => ({
                 name: book.title,
                 description: book.description,
-                amount_cents: book.price * 100,
+                amount_cents: Math.round(book.price * 100), // amount in cents
                 quantity: 1
-            }            
-        ))
+            }))
         });
 
         const orderId = paymobOrder.data.id;
 
         const paymentKey = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
             auth_token: token,
-            amount_cents: totalAmount * 100,
+            amount_cents: Math.round(totalAmount * 100), // amount in cents
             expiration: 3600,
             order_id: orderId,
             billing_data: {
                 email: req.user.email,
-                first_name: req.user.firstName || req.user.username,
+                first_name: req.user.firstName || req.user.username || "First",
                 last_name: req.user.lastName || "Last",
-                phone_number: req.user.phone || "01201450980",
+                phone_number: req.user.phone || "01201450980", // fallback phone number
                 country: "EGY",
                 city: "Cairo",
                 street: "Street",
@@ -89,12 +76,9 @@ const createOrder = async (req, res, next) => {
             integration_id: process.env.PAYMOB_INTEGRATION_ID,
         });
 
-
         const paymentToken = paymentKey.data.token;
-        if(paymentToken){
-
+        if (paymentToken) {
             await newOrder.save();
-    
             cart.items = [];
             await cart.save();
         }
@@ -109,5 +93,4 @@ const createOrder = async (req, res, next) => {
     }
 };
 
-
-module.exports = { createOrder }
+module.exports = { createOrder };
