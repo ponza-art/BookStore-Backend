@@ -1,19 +1,23 @@
 const AppError = require("../utils/appError");
-const User =require("../models/userSchema")
+const User = require("../models/userSchema");
+const UserGoogle = require("../models/userGoogleSchema");
 
 const checkUserStatus = async (req, res, next) => {
   try {
-    const user = req.user;  
+    const user = req.user;
     
-    const userData = await User.findById( user.id)
-    
+    let userData = await User.findById(user.id);
+
+    if (!userData) {
+      userData = await UserGoogle.findById(user.id);
+    }
     
 
     if (userData.status === false) {
       return next(new AppError("User is blocked", 403));
     }
 
-    next(); 
+    next();
   } catch (error) {
     return next(new AppError("Failed to check user status", 500));
   }

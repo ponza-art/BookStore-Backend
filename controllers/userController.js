@@ -11,7 +11,9 @@ const { userUpdateSchemaJoi } = require("../validators/userValidate");
 
 const getAllUsers = async (req, res, next) => {
   try {
-    const Users = await User.find({}, { __v: 0, password: 0 });
+    const allUsers = await User.find({}, { __v: 0, password: 0 });
+    const GoogleUser = await UserGoogle.find({}, { __v: 0, password: 0 });
+    const Users = allUsers.concat(GoogleUser);
     res
       .status(200)
       .json({ status: httpStatusText.SUCCESS, code: "200", data: { Users } });
@@ -155,7 +157,7 @@ const googleLogin = async (req, res, next) => {
     let user = await UserGoogle.findOne({ email });
     if (!user) {
       user = await UserGoogle.create({
-        name,
+        username: name,
         email,
         image: picture,
       });
@@ -163,12 +165,18 @@ const googleLogin = async (req, res, next) => {
 
     const userWithId = {
       id: user._id,
-      name: user.name,
+      username: user.username,
       email: user.email,
       image: user.image,
+      status: user.status || false,
+      isAdmin: user.isAdmin,
     };
 
-    const token = await generateJWT({ id: userWithId.id, email });
+    const token = await generateJWT({
+      id: userWithId.id,
+      email,
+      status: userWithId.status || false,
+    });
 
     res.status(200).json({
       status: httpStatusText.SUCCESS,
@@ -195,11 +203,19 @@ const editUserStatus = async (req, res, next) => {
       return next(new AppError("Invalid status", 400));
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
+    let updatedUser = await User.findByIdAndUpdate(
       userId,
       { status },
       { new: true }
     );
+
+    if (!updatedUser) {
+      updatedUser = await UserGoogle.findByIdAndUpdate(
+        userId,
+        { status },
+        { new: true }
+      );
+    }
 
     if (!updatedUser) {
       return next(new AppError("User not found", 404));
@@ -222,19 +238,31 @@ const updateProfile = async (req, res, next) => {
 
     const { error } = userUpdateSchemaJoi.validate({ username, email });
     if (error) {
-      return next(new AppError(`Validation error: ${error.details[0].message}`, 400));
+      return next(
+        new AppError(`Validation error: ${error.details[0].message}`, 400)
+      );
     }
 
     const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      await UserGoogle.findOne({ email });
+    }
     if (existingUser && existingUser._id.toString() !== userId) {
       return next(new AppError("Email already in use by another user", 400));
     }
 
-    const updatedUser = await User.findByIdAndUpdate(
+    let updatedUser = await User.findByIdAndUpdate(
       userId,
       { username, email },
       { new: true, runValidators: true }
     );
+    if (!updatedUser) {
+      updatedUser = await UserGoogle.findByIdAndUpdate(
+        userId,
+        { username, email },
+        { new: true, runValidators: true }
+      );
+    }
 
     if (!updatedUser) {
       return next(new AppError("User not found", 404));
@@ -250,14 +278,14 @@ const updateProfile = async (req, res, next) => {
   }
 };
 
-
-
-
 const getUserProfile = async (req, res, next) => {
   try {
-    const userId = req.user.id;  
+    const userId = req.user.id;
 
-    const user = await User.findById(userId, { password: 0, __v: 0 });
+    let user = await User.findById(userId, { password: 0, __v: 0 });
+    if (!user) {
+      user = await UserGoogle.findById(userId, { password: 0, __v: 0 });
+    }
 
     if (!user) {
       return next(new AppError("User not found", 404));
@@ -273,7 +301,13 @@ const getUserProfile = async (req, res, next) => {
   }
 };
 
-module.exports = { getAllUsers, register, login, createAdmin, googleLogin, editUserStatus, updateProfile,getUserProfile };
-
-
-
+module.exports = {
+  getAllUsers,
+  register,
+  login,
+  createAdmin,
+  googleLogin,
+  editUserStatus,
+  updateProfile,
+  getUserProfile,
+};

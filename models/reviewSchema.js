@@ -14,9 +14,14 @@ const commentReviewSchema = new Schema(
       min: 1,
       max: 5,
     },
-    userId: {
+   userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
+      required: true,
+      refPath: "userType",
+    },
+    userType: {
+      type: String,
+      enum: ["User", "UserGoogle"],
       required: true,
     },
     bookId: {

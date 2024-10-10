@@ -1,21 +1,54 @@
 const CommentReview = require("../models/reviewSchema");
+const UserGoogle = require("../models/userGoogleSchema");
+const User = require("../models/userSchema");
 
 exports.createCommentReview = async (req, res) => {
+  let userId = req.user.id;
   try {
     const { comment, rating, bookId } = req.body;
-    const userId = req.user.id;
-    const newCommentReview = new CommentReview({
-      comment,
-      rating,
-      userId,
-      bookId,
-    });
-    await newCommentReview.save();
-    res.status(201).json({
-      message: "Review created successfully",
-      data: newCommentReview,
-    });
+    const userGoogleExists = await UserGoogle.exists({ _id: userId });
+    const userExists = await User.exists({ _id: userId });
+    let userType;
+
+    if (userGoogleExists) {
+      userType = "UserGoogle";
+      userId = req.user.id;
+      const newCommentReview = new CommentReview({
+        comment,
+        rating,
+        userId,
+        bookId,
+        userType,
+      });
+
+      await newCommentReview.save();
+      res.status(201).json({
+        message: "Review created successfully",
+        data: newCommentReview,
+      });
+    } else if (userExists) {
+      userType = "User";
+      userId = req.user.id;
+      const newCommentReview = new CommentReview({
+        comment,
+        rating,
+        userId,
+        bookId,
+        userType,
+      });
+
+      await newCommentReview.save();
+      res.status(201).json({
+        message: "Review created successfully",
+        data: newCommentReview,
+      });
+    } else {
+      return res
+        .status(404)
+        .json({ message: "User does not exist in either UserGoogle or User." });
+    }
   } catch (error) {
+    console.log(error.message);
     res.status(500).json({ message: "Error creating review", error });
   }
 };

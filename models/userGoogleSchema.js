@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 const userGoogleSchema = new mongoose.Schema({
-  name: {
+ username: {
     type: String,
   },
   email: {
@@ -9,6 +9,15 @@ const userGoogleSchema = new mongoose.Schema({
 
   image: {
     type: String,
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
+  status: {
+    type: Boolean,
+    enum: [true, false],
+    default: true,
   },
 });
 
