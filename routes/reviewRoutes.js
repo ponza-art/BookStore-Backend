@@ -20,7 +20,7 @@ router.get("/:bookId/reviews", commentReviewController.getAllReviewsByBook);
 
 // router.get("/:id", commentReviewController.getCommentReviewById);
 
-router.get("/user/reviews", authenticate, commentReviewController.getAllReviewsByUser);
+router.get("/user", authenticate, commentReviewController.getAllReviewsByUser);
 
 router.get("/all-reviews", verifyAdmin, commentReviewController.getAllReviews);
 
