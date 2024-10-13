@@ -15,53 +15,64 @@ const getBooks = async (req, res, next) => {
       category,
       minPrice,
       maxPrice,
+      search,
+      sortBy = "default",
       page = 1,
       limit = 12,
     } = req.query;
-
-    
     const filter = {};
-
-    if (author) {
-      filter.author = author;
-    }
-
-    if (category) {
-      filter.category = category;
-    }
-
+    if (author) filter.author = author;
+    if (category) filter.category = category;
     if (minPrice || maxPrice) {
-      filter.price = {};
-      if (minPrice) {
-        filter.price.$gte = Number(minPrice); 
-      }
-      if (maxPrice) {
-        filter.price.$lte = Number(maxPrice); 
-      }
+      filter.originalPrice = {};
+      if (minPrice) filter.originalPrice.$gte = Number(minPrice);
+      if (maxPrice) filter.originalPrice.$lte = Number(maxPrice);
     }
-
+    if (search) {
+      filter.title = { $regex: search, $options: "i" };
+    }
+    let sort = {};
+    switch (sortBy) {
+      case "oldest":
+        sort = { createdAt: 1 };
+        break;
+      case "newest":
+        sort = { createdAt: -1 };
+        break;
+      case "on-sale":
+        filter.discountPercentage = { $gt: 0 };
+        sort = { discountedPrice: 1 };
+        break;
+      case "price-low-to-high":
+        sort = { discountedPrice: 1 };
+        break;
+      case "price-high-to-low":
+        sort = { discountedPrice: -1 };
+        break;
+      default:
+        sort = {};
+    }
+    const totalBooks = await Book.countDocuments(filter);
+    const totalPages = Math.ceil(totalBooks / limit);
     const skip = (page - 1) * limit;
     const books = await Book.find(filter)
+      .sort(sort)
       .skip(skip)
       .limit(Number(limit))
       .exec();
-
-    const totalBooks = await Book.countDocuments(filter);
-    const booksDataWithoutSourcePath = books.map(book => {
+    const booksDataWithoutSourcePath = books.map((book) => {
       const { sourcePath, ...bookDataWithoutSourcePath } = book.toObject();
-      return bookDataWithoutSourcePath; 
+      return bookDataWithoutSourcePath;
     });
-   
     res.json({
-      booksDataWithoutSourcePath ,
-      totalPages: Math.ceil(totalBooks / limit),
+      booksDataWithoutSourcePath,
+      totalPages,
       currentPage: Number(page),
     });
   } catch (error) {
     next(error);
   }
 };
-
 
 const getBookById = async (req, res, next) => {
   try {
@@ -70,68 +81,65 @@ const getBookById = async (req, res, next) => {
       return res.status(404).json({ error: "Book not found" });
     }
 
-    
     let responseData = {};
 
-    
     if (!req.user) {
-      const { sourcePath, ...bookDataWithoutsourcePath } = book.toObject(); 
-      responseData = bookDataWithoutsourcePath; 
+      const { sourcePath, ...bookDataWithoutsourcePath } = book.toObject();
+      responseData = bookDataWithoutsourcePath;
     } else {
       const userId = req.user.id;
       const orders = await Order.find({ userId: userId });
-      
+
       let hasOrderedBook = false;
 
-      
       for (const order of orders) {
         for (const bookItem of order.books) {
           if (bookItem.bookId.toString() === req.params.id) {
-            hasOrderedBook = true; 
-            break; 
+            hasOrderedBook = true;
+            break;
           }
         }
         if (hasOrderedBook) break;
       }
 
-      
       if (hasOrderedBook) {
-        responseData = book.toObject(); 
+        responseData = book.toObject();
       } else {
         const { sourcePath, ...bookDataWithoutsourcePath } = book.toObject();
-        responseData = bookDataWithoutsourcePath; 
+        responseData = bookDataWithoutsourcePath;
       }
     }
 
-    
     return res.json(responseData);
   } catch (error) {
     next(error);
   }
 };
 
-
-
-
-
-
-
 const createBook = async (req, res, next) => {
   try {
-    const { title, description, price, category, authorName, discountPercentage } = req.body;
+    const {
+      title,
+      description,
+      price,
+      category,
+      authorName,
+      discountPercentage,
+    } = req.body;
 
-    // Calculate original and discounted price
     const originalPrice = price;
-    const discountedPrice = price - (price * (discountPercentage / 100));
+    const discountedPrice = price - price * (discountPercentage / 100);
 
     const bookFile = req.files["file"][0];
     const coverImageFile = req.files["cover"][0];
     const samplePdfFile = req.files["sample"][0];
 
     if (!bookFile || !coverImageFile || !samplePdfFile) {
-      return res.status(400).json({ error: "All files (book, cover, sample) must be provided" });
+      return res
+        .status(400)
+        .json({ error: "All files (book, cover, sample) must be provided" });
     }
-    
+
     const author = await Author.findOne({ name: authorName });
     if (!author) {
       return res.status(404).json({ error: "Author not found" });
@@ -148,16 +156,24 @@ const createBook = async (req, res, next) => {
       metadata: { contentType: bookFile.mimetype },
     });
     bookStream.end(bookFile.buffer);
-    
-    const sanitizedCoverFilename = coverImageFile.originalname.replace(/\s+/g, "_");
+
+    const sanitizedCoverFilename = coverImageFile.originalname.replace(
+      /\s+/g,
+      "_"
+    );
     const firebaseCoverFile = bucket.file(`covers/${sanitizedCoverFilename}`);
     const coverStream = firebaseCoverFile.createWriteStream({
       metadata: { contentType: coverImageFile.mimetype },
     });
     coverStream.end(coverImageFile.buffer);
-    
-    const sanitizedSampleFilename = samplePdfFile.originalname.replace(/\s+/g, "_");
-    const firebaseSampleFile = bucket.file(`samples/${sanitizedSampleFilename}`);
+
+    const sanitizedSampleFilename = samplePdfFile.originalname.replace(
+      /\s+/g,
+      "_"
+    );
+    const firebaseSampleFile = bucket.file(
+      `samples/${sanitizedSampleFilename}`
+    );
     const sampleStream = firebaseSampleFile.createWriteStream({
       metadata: { contentType: samplePdfFile.mimetype },
     });
@@ -176,14 +192,14 @@ const createBook = async (req, res, next) => {
         action: "read",
         expires: "03-09-2491",
       });
-      
+
       const newBook = new Book({
         title,
         description,
-        price: originalPrice,  // Save original price
-        discountPercentage: discountPercentage || 0, // Set discount percentage
-        originalPrice: originalPrice,  // Save original price
-        discountedPrice: discountedPrice,  // Save discounted price
+        price: originalPrice,
+        discountPercentage: discountPercentage || 0,
+        originalPrice: originalPrice,
+        discountedPrice: discountedPrice,
         category,
         author: author.name,
         sourcePath: bookUrl,
@@ -215,8 +231,6 @@ const createBook = async (req, res, next) => {
   }
 };
 
-
-
 const updateBookById = async (req, res, next) => {
   try {
     const book = await Book.findById(req.params.id);
@@ -236,9 +250,13 @@ const updateBookById = async (req, res, next) => {
       req.body.discountPercentage = Number(req.body.discountPercentage); // Ensure it's a number
     }
 
-    // Calculate original and discounted price
-    const originalPrice = req.body.price !== undefined ? req.body.price : book.price;
-    const discountedPrice = originalPrice - (originalPrice * (req.body.discountPercentage || book.discountPercentage) / 100);
+    const originalPrice =
+      req.body.price !== undefined ? req.body.price : book.price;
+    const discountedPrice =
+      originalPrice -
+      (originalPrice *
+        (req.body.discountPercentage || book.discountPercentage)) /
+        100;
 
     if (req.files) {
       const uploadPromises = [];
@@ -315,8 +333,6 @@ const updateBookById = async (req, res, next) => {
   }
 };
 
-
-
 const uploadFileToFirebase = (file, folder) => {
   return new Promise((resolve, reject) => {
     const sanitizedFilename = file.originalname.replace(/\s+/g, "_").trim();
@@ -358,7 +374,6 @@ const deleteBookById = async (req, res, next) => {
       await category.save();
     }
 
-    
     const author = await Author.findOne({ name: book.author });
 
     if (author) {
@@ -368,25 +383,21 @@ const deleteBookById = async (req, res, next) => {
       await author.save();
     }
 
-    
     await Cart.updateMany(
       { "items.bookId": book._id },
       { $pull: { items: { bookId: book._id } } }
     );
 
-    
     await Favorites.updateMany(
       { "books.bookId": book._id },
       { $pull: { books: { bookId: book._id } } }
     );
 
-    
     await Order.updateMany(
       { "books.bookId": book._id },
       { $pull: { books: { bookId: book._id } } }
     );
 
-    
     const previousBookFileName = book.sourcePath
       .split("/")
       .pop()
@@ -411,7 +422,6 @@ const deleteBookById = async (req, res, next) => {
     const previousSampleFile = bucket.file(`samples/${previousSampleFileName}`);
     await previousSampleFile.delete();
 
-    
     await Book.findByIdAndDelete(book._id);
 
     res.json({ message: "Book and related data deleted" });
