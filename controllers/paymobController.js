@@ -19,19 +19,24 @@ const createOrder = async (req, res, next) => {
         const books = cart.items.map((item) => ({
             bookId: item.bookId._id,
             title: item.bookId.title,
-            price: Math.round(item.bookId.discountedPrice * 100) / 100,  // rounding to ensure correct value
+            price: Math.round(item.bookId.discountedPrice * 100) / 100,  
             coverImage: item.bookId.coverImage,
             description: item.bookId.description,
             sourcePath: item.bookId.sourcePath,
         }));
 
-        const totalAmount = books.reduce((acc, book) => acc + book.price, 0).toFixed(2); // rounding total amount
+        const totalAmountWithoutTax = books.reduce((acc, book) => acc + book.price, 0).toFixed(2); 
+
+        const taxRate = 0.14; 
+        const taxAmount = (totalAmountWithoutTax * taxRate).toFixed(2); 
+        const totalAmount = (parseFloat(totalAmountWithoutTax) + parseFloat(taxAmount)).toFixed(2); 
 
         const newOrder = new Order({
             userId,
             cartId: cart._id,
             books,
             totalAmount,
+            taxAmount, 
         });
 
         const authToken = await axios.post('https://accept.paymob.com/api/auth/tokens', {
@@ -43,12 +48,12 @@ const createOrder = async (req, res, next) => {
         const paymobOrder = await axios.post('https://accept.paymob.com/api/ecommerce/orders', {
             auth_token: token,
             delivery_needed: "false",
-            amount_cents: Math.round(totalAmount * 100), // amount in cents
+            amount_cents: Math.round(totalAmount * 100), 
             currency: "EGP",
             items: books.map(book => ({
                 name: book.title,
                 description: book.description,
-                amount_cents: Math.round(book.price * 100), // amount in cents
+                amount_cents: Math.round(book.price * 100), 
                 quantity: 1
             }))
         });
@@ -57,14 +62,14 @@ const createOrder = async (req, res, next) => {
 
         const paymentKey = await axios.post('https://accept.paymob.com/api/acceptance/payment_keys', {
             auth_token: token,
-            amount_cents: Math.round(totalAmount * 100), // amount in cents
+            amount_cents: Math.round(totalAmount * 100), 
             expiration: 3600,
             order_id: orderId,
             billing_data: {
                 email: req.user.email,
                 first_name: req.user.firstName || req.user.username || "First",
                 last_name: req.user.lastName || "Last",
-                phone_number: req.user.phone || "01201450980", // fallback phone number
+                phone_number: req.user.phone || "01201450980", 
                 country: "EGY",
                 city: "Cairo",
                 street: "Street",
