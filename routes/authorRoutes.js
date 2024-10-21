@@ -8,6 +8,10 @@ const {
 } = require("../controllers/authorController");
 const multer = require("multer");
 
+const { createAuthorSchema, updateAuthorSchema } = require("../validators/authorValidator"); 
+const { validateRequest } = require('../middleware/middelwareAuthor');
+
+
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 const verifyAdmin2 = require("../middleware/verifyAdmin2");
@@ -19,6 +23,7 @@ router.post(
   "/create",
   verifyAdmin2,
   upload.fields([{ name: "file", maxCount: 1 }]), // Add upload middleware
+  validateRequest(createAuthorSchema), 
   createAuthor
 );
 
@@ -26,6 +31,7 @@ router.put(
   "/update/:id",
   verifyAdmin2,
   upload.fields([{ name: "file", maxCount: 1 }]),
+  validateRequest(updateAuthorSchema),  
   updateAuthor
 );
 

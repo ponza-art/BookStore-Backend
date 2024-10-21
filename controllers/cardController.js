@@ -47,4 +47,32 @@ const getAllUserCards = async (req, res, next) => {
     }
   };
 
-module.exports = { saveCard, getAllUserCards };
+  const deleteCard = async (req, res, next) => {
+    try {
+      const { cardId } = req.params;
+      const userId = req.user.id;
+    const card = await Card.findOne({ _id: cardId, userId });
+  
+      if (!card) {
+        return res.status(404).json({
+          status: "fail",
+          message: "Card not found or you do not have permission to delete it",
+        });
+      }
+ 
+      await card.deleteOne();
+  
+      res.status(200).json({
+        status: "success",
+        message: "Card deleted successfully",
+      });
+    } catch (error) {
+      next(new AppError("Failed to delete card", 500));
+    }
+  };
+  
+
+
+
+
+module.exports = { saveCard, getAllUserCards,deleteCard };
