@@ -24,9 +24,9 @@ const getBooks = async (req, res, next) => {
     if (author) filter.author = author;
     if (category) filter.category = category;
     if (minPrice || maxPrice) {
-      filter.originalPrice = {};
-      if (minPrice) filter.originalPrice.$gte = Number(minPrice);
-      if (maxPrice) filter.originalPrice.$lte = Number(maxPrice);
+      filter.discountedPrice = {};
+      if (minPrice) filter.discountedPrice.$gte = Number(minPrice);
+      if (maxPrice) filter.discountedPrice.$lte = Number(maxPrice);
     }
     if (search) {
       filter.title = { $regex: search, $options: "i" };
