@@ -3,7 +3,7 @@ const Joi = require("joi");
 const createAuthorSchema = Joi.object({
   name: Joi.string().min(3).max(100).required().messages({
     "string.base": "Name should be a type of text",
-    "string.empty": "Name cannot be an empty field",
+    "string.empty": "Name can not be an empty field",
     "string.min": "Name should have a minimum length of 3 characters",
     "string.max": "Name should have a maximum length of 100 characters",
     "any.required": "Author name is required",
@@ -21,6 +21,7 @@ const updateAuthorSchema = Joi.object({
   }),
   image: Joi.any().optional().messages({
     "any.required": "Image is required",
+
   }),
 });
 
