@@ -7,6 +7,7 @@ const validateRequest = (schema) => {
           message: error.details[0].message,
         });
       }
+      
       next();
     };
   };
