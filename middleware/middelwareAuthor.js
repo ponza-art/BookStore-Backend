@@ -6,6 +6,7 @@ const validateRequest = (schema) => {
       const dataToValidate = {
         ...body,
         image: files && files["file"] ? files["file"][0] : undefined,
+        
       };
   
       const { error } = schema.validate(dataToValidate, { abortEarly: false });
