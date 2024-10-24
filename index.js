@@ -19,7 +19,7 @@ const cardRoutes = require("./routes/cardRoutes");
 const { OAuth2Client } = require("google-auth-library");
 //make token save in cookies
 var cookieParser = require("cookie-parser");
-app.use(cookieParser());
+app.use(cookieParser()); 
 app.use(cors({ credentials: true }));
 
 ////////////////////////////////
