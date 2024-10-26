@@ -15,6 +15,7 @@ const reviewRoutes = require("./routes/reviewRoutes");
 const paymentStripeeRoutes = require("./routes/paymentStripeRoutes");
 const paymobRoutes = require("./routes/paymobRoutes");
 const contactRoutes = require("./routes/contactRoutes");
+const adminRoutes = require('./routes/adminStats');
 const cardRoutes = require("./routes/cardRoutes");
 const { OAuth2Client } = require("google-auth-library");
 //make token save in cookies
@@ -51,6 +52,8 @@ mongoose
 //route
 const Usersrouter = require("./routes/userRoutes");
 
+app.use('/admin', adminRoutes);
+
 app.use("/users", Usersrouter);
 app.use("/book", bookRouter);
 app.use("/cart", cartRoutes);
@@ -63,6 +66,7 @@ app.use("/stripe", paymentStripeeRoutes);
 app.use("/paymob", paymobRoutes);
 app.use("/contact", contactRoutes); 
 app.use("/card", cardRoutes); 
+
 
 
 
