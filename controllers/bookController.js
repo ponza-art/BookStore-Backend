@@ -439,6 +439,16 @@ const getAllBooks = async (req, res, next) => {
   }
 };
 
+const getAllBookswithoutSource = async (req, res, next) => {
+  try {
+    const books = await Book.find().select("-sourcePath"); 
+    res.json(books);
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 module.exports = {
   getAllBooks,
   getBooks,
@@ -446,4 +456,5 @@ module.exports = {
   createBook,
   updateBookById,
   deleteBookById,
+  getAllBookswithoutSource
 };

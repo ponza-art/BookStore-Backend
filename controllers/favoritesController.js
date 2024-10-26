@@ -22,9 +22,12 @@ const addToFavorites = async (req, res, next) => {
 const getFavorites = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const favorites = await Favorites.findOne({ userId }).populate(
-      "books.bookId"
-    );
+    const favorites = await Favorites.findOne({ userId })
+      .populate({
+        path: "books.bookId",
+        select: "-sourcePath", 
+      });
+
     if (!favorites) {
       return next(new AppError("Favorites not found", 404));
     }
@@ -33,6 +36,7 @@ const getFavorites = async (req, res, next) => {
     next(error);
   }
 };
+
 
 const deleteFromFavorites = async (req, res, next) => {
   try {

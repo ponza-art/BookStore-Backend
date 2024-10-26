@@ -7,6 +7,7 @@ const {
   getBookById,
   updateBookById,
   deleteBookById,
+  getAllBookswithoutSource
 } = require("../controllers/bookController");
 const multer = require("multer");
 const storage = multer.memoryStorage();
@@ -15,6 +16,7 @@ const verifyAdmin2 = require("../middleware/verifyAdmin2");
 const verifyTokenToGetBook = require("../middleware/verifyTokenTogetBook");
 
 router.get("/", getAllBooks);
+router.get("/home", getAllBookswithoutSource);
 router.get('/filters',getBooks)
 
 router.get("/:id",verifyTokenToGetBook, getBookById);

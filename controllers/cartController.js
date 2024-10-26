@@ -25,7 +25,12 @@ const addToCart = async (req, res, next) => {
 const getCart = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const cart = await Cart.findOne({ userId }).populate("items.bookId");
+    const cart = await Cart.findOne({ userId })
+      .populate({
+        path: "items.bookId",
+        select: "-sourcePath", 
+      });
+
     if (!cart) {
       return next(new AppError("Cart not found", 404));
     }
@@ -34,6 +39,7 @@ const getCart = async (req, res, next) => {
     next(error);
   }
 };
+
 
 const deleteFromCart = async (req, res, next) => {
   try {
