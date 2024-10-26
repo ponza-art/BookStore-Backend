@@ -15,7 +15,7 @@ const upload = multer({ storage });
 const verifyAdmin2 = require("../middleware/verifyAdmin2");
 const verifyTokenToGetBook = require("../middleware/verifyTokenTogetBook");
 
-router.get("/", getAllBooks);
+router.get("/",verifyAdmin2, getAllBooks);
 router.get("/home", getAllBookswithoutSource);
 router.get('/filters',getBooks)
 
