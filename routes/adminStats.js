@@ -4,10 +4,12 @@ const User = require('../models/userSchema');
 const Category = require('../models/categoryShema');
 const Author = require('../models/authorSchema');
 const Review = require('../models/reviewSchema');
+const verifyAdmin = require("../middleware/verifyAdmin2");
+
 
 const router = express.Router();
 
-router.get('/stats', async (req, res) => {
+router.get('/stats',verifyAdmin, async (req, res) => {
   try {
     const bookCount = await Book.countDocuments();
     const latestBook = await Book.findOne().sort({ createdAt: -1 }).exec();
