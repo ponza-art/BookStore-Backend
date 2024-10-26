@@ -50,6 +50,17 @@ const getAllOrders = async (req, res, next) => {
       next(error);
     }
   };
+
+const getOrdersAdmin = async (req, res, next) => {
+    try {  
+      
+      const orders = await Order.find();
+  
+      res.json(orders);
+    } catch (error) {
+      next(error);
+    }
+  };
   
 
 // const getOrderById = async (req, res, next) => {
@@ -81,4 +92,4 @@ const getAllOrders = async (req, res, next) => {
 //   }
 // };
 
-module.exports = { createOrder, getAllOrders };
+module.exports = { createOrder, getAllOrders,getOrdersAdmin };
