@@ -6,3 +6,4 @@ config.env
 firebaseServiceAccount.json
 app.log
 !vercel.json
+.vercel

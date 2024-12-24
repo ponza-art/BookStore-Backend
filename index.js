@@ -24,8 +24,6 @@ app.use(cookieParser());
 
 const corsOptions = {
   origin: '*',  // Allow all origins or specify your frontend URL
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 };
 
