@@ -21,7 +21,15 @@ const { OAuth2Client } = require("google-auth-library");
 //make token save in cookies
 var cookieParser = require("cookie-parser");
 app.use(cookieParser()); 
-app.use(cors());
+
+const corsOptions = {
+  origin: '*',  // Allow all origins or specify your frontend URL
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+};
+
+app.use(cors(corsOptions));
 ////////////////////////////////
 const bookRouter = require("./routes/bookRoutes");
 require("dotenv").config();
